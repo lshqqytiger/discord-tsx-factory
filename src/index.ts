@@ -15,31 +15,29 @@ declare global {
   }
 }
 
-const React = {
-  createElement: (
-    tag: keyof globalThis.JSX.IntrinsicElements | Function,
-    props: any, // 임시
-    ...children: any[]
-  ) => {
-    if (typeof tag == "function") return tag(props, children);
-    switch (tag) {
-      case "embed": {
-        const embed = new Discord.MessageEmbed(props);
-        embed.addFields(children);
-        return embed;
-      }
-      case "field":
-        return {
-          name: props.name,
-          value: children.join(""),
-          inline: props.inline || false,
-        };
-      case "emoji":
-        return ` :${props.name}:`;
-      default:
-        return {};
+const createElement = (
+  tag: keyof globalThis.JSX.IntrinsicElements | Function,
+  props: any, // 임시
+  ...children: any[]
+) => {
+  if (typeof tag == "function") return tag(props, children);
+  switch (tag) {
+    case "embed": {
+      const embed = new Discord.MessageEmbed(props);
+      embed.addFields(children);
+      return embed;
     }
-  },
+    case "field":
+      return {
+        name: props.name,
+        value: children.join(""),
+        inline: props.inline || false,
+      };
+    case "emoji":
+      return ` :${props.name}:`;
+    default:
+      return {};
+  }
 };
 
-export { Discord, React };
+export { createElement };

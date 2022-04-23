@@ -8,6 +8,7 @@ type Overwrite<T, K> = {
 
 declare global {
   namespace JSX {
+    type Element = any; // 임시
     interface IntrinsicElements {
       embed: Discord.MessageEmbedOptions;
       field: PartialBy<Omit<Discord.EmbedFieldData, "value">, "inline">;
@@ -22,15 +23,9 @@ declare global {
         Partial<Discord.MessageSelectMenuOptions>,
         "customId"
       > & { onChange?: (interaction: Discord.SelectMenuInteraction) => void };
-      option: Partial<MessageSelectOption>;
+      option: Discord.MessageSelectOptionData;
     }
   }
-}
-
-interface MessageSelectOption {
-  label: string;
-  description: string;
-  value: string;
 }
 
 const interactionHandlers = new Map<
@@ -81,11 +76,10 @@ const createElement = (
       interactionHandlers.set(props.customId, props.onChange);
       return select;
     case "option":
-      return props as MessageSelectOption;
-    default:
-      return {};
+      return props as Discord.MessageSelectOptionData;
   }
 };
+const Fragment = (props: null, children: JSX.Element[]) => children;
 
 class Client extends Discord.Client {
   constructor(options: Discord.ClientOptions) {
@@ -99,4 +93,4 @@ class Client extends Discord.Client {
   }
 }
 
-export { createElement, Client };
+export { createElement, Fragment, Client };

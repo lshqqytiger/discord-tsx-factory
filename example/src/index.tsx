@@ -1,4 +1,4 @@
-import { createElement, Client } from "discord-tsx";
+import { createElement, Fragment, Client } from "discord-tsx";
 import * as Discord from "discord.js";
 
 const client = new Client({ intents: [Discord.Intents.FLAGS.GUILDS] });

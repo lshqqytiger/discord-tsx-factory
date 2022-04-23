@@ -8,6 +8,7 @@
     "skipLibCheck": true,
     "jsx": "react",
     "jsxFactory": "createElement",
+    "jsxFragmentFactory": "Fragment",
     "outDir": "./dist"
   },
   "include": ["src/**/*"]

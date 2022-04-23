@@ -53,10 +53,11 @@ const createElement = (
       };
     case "emoji":
       return ` :${props.name}:`;
-    case "row":
+    case "row": {
       const row = new Discord.MessageActionRow();
       row.addComponents(children);
       return row;
+    }
     case "button":
       interactionHandlers.set(props.customId, props.onClick);
       return new Discord.MessageButton({
@@ -70,11 +71,12 @@ const createElement = (
         style: "LINK",
         label: children.join(""),
       });
-    case "select":
+    case "select": {
       const select = new Discord.MessageSelectMenu(props);
       select.addOptions(children);
       interactionHandlers.set(props.customId, props.onChange);
       return select;
+    }
     case "option":
       return props as Discord.MessageSelectOptionData;
   }

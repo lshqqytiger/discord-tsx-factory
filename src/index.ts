@@ -17,7 +17,10 @@ declare global {
       button: RequiredBy<
         Partial<Discord.InteractionButtonOptions>,
         "customId"
-      > & { onClick?: (interaction: Discord.ButtonInteraction) => void };
+      > & {
+        emoji?: Discord.Emoji | string;
+        onClick?: (interaction: Discord.ButtonInteraction) => void;
+      };
       linkbutton: RequiredBy<Partial<Discord.LinkButtonOptions>, "url">;
       select: RequiredBy<
         Partial<Discord.MessageSelectMenuOptions>,
@@ -42,7 +45,11 @@ const createElement = (
   switch (tag) {
     case "embed": {
       const embed = new Discord.MessageEmbed(props);
-      embed.addFields(children);
+      children.forEach((v) => {
+        if (typeof v == "string")
+          embed.setDescription(embed.description || "" + v);
+        else embed.addFields(children);
+      });
       return embed;
     }
     case "field":
@@ -58,13 +65,16 @@ const createElement = (
       row.addComponents(children);
       return row;
     }
-    case "button":
-      interactionHandlers.set(props.customId, props.onClick);
-      return new Discord.MessageButton({
+    case "button": {
+      const button = new Discord.MessageButton({
         ...props,
         style: props.style || "PRIMARY",
         label: children.join(""),
       });
+      interactionHandlers.set(props.customId, props.onClick);
+      if (props.emoji) button.setEmoji(props.emoji);
+      return button;
+    }
     case "linkbutton":
       return new Discord.MessageButton({
         ...props,

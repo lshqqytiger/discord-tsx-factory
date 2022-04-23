@@ -10,23 +10,24 @@ declare global {
   namespace JSX {
     type Element = any; // 임시
     interface IntrinsicElements {
-      embed: Discord.MessageEmbedOptions;
+      embed: Discord.EmbedData;
       field: PartialBy<Omit<Discord.EmbedFieldData, "value">, "inline">;
       emoji: { name: string };
-      row: Partial<Discord.MessageActionRowComponentOptions>;
-      button: RequiredBy<
-        Partial<Discord.InteractionButtonOptions>,
-        "customId"
-      > & {
+      row: Partial<Discord.ActionRowComponentData>;
+      button: RequiredBy<Partial<Discord.ButtonComponent>, "customId"> & {
         emoji?: Discord.Emoji | string;
         onClick?: (interaction: Discord.ButtonInteraction) => void;
       };
-      linkbutton: RequiredBy<Partial<Discord.LinkButtonOptions>, "url">;
+      linkbutton: RequiredBy<Partial<Discord.LinkButtonComponentData>, "url">;
       select: RequiredBy<
-        Partial<Discord.MessageSelectMenuOptions>,
+        Partial<Discord.SelectMenuComponentData>,
         "customId"
       > & { onChange?: (interaction: Discord.SelectMenuInteraction) => void };
-      option: Discord.MessageSelectOptionData;
+      option: Discord.SelectMenuComponentOptionData;
+      modal: Omit<Discord.ModalData, "components"> & {
+        onSubmit?: (interaction: Discord.ModalSubmitInteraction) => void;
+      };
+      input: Omit<Discord.TextInputComponentData, "type">;
     }
   }
 }
@@ -40,18 +41,18 @@ const createElement = (
   props: any,
   ...children: any[]
 ) => {
+  const components = children[0] instanceof Array ? children[0] : children;
   if (typeof tag == "function") return tag(props, children);
   if (!props) props = {}; // null
   switch (tag) {
-    case "embed": {
-      const embed = new Discord.MessageEmbed(props);
+    case "embed":
+      props.fields = [];
+      props.description = "";
       children.forEach((v) => {
-        if (typeof v == "string")
-          embed.setDescription(embed.description || "" + v);
-        else embed.addFields(children);
+        if (typeof v == "string") props.description += v;
+        else props.fields.push(children);
       });
-      return embed;
-    }
+      return new Discord.EmbedBuilder(props);
     case "field":
       return {
         name: props.name,
@@ -60,15 +61,15 @@ const createElement = (
       };
     case "emoji":
       return ` :${props.name}:`;
-    case "row": {
-      const row = new Discord.MessageActionRow();
-      row.addComponents(children);
-      return row;
-    }
-    case "button": {
-      const button = new Discord.MessageButton({
+    case "row":
+      return new Discord.ActionRowBuilder({
         ...props,
-        style: props.style || "PRIMARY",
+        components,
+      });
+    case "button": {
+      const button = new Discord.ButtonBuilder({
+        ...props,
+        style: props.style || Discord.ButtonStyle.Primary,
         label: children.join(""),
       });
       interactionHandlers.set(props.customId, props.onClick);
@@ -76,19 +77,24 @@ const createElement = (
       return button;
     }
     case "linkbutton":
-      return new Discord.MessageButton({
+      return new Discord.ButtonBuilder({
         ...props,
-        style: "LINK",
+        style: Discord.ButtonStyle.Link,
         label: children.join(""),
       });
     case "select": {
-      const select = new Discord.MessageSelectMenu(props);
+      const select = new Discord.SelectMenuBuilder(props);
       select.addOptions(children);
       interactionHandlers.set(props.customId, props.onChange);
       return select;
     }
     case "option":
-      return props as Discord.MessageSelectOptionData;
+      return props as Discord.SelectMenuComponentOptionData;
+    case "modal":
+      interactionHandlers.set(props.customId, props.onSubmit);
+      return new Discord.ModalBuilder({ ...props, components });
+    case "input":
+      return new Discord.TextInputBuilder({ ...props, type: 4 });
   }
 };
 const Fragment = (props: null, children: JSX.Element[]) => children;
@@ -100,6 +106,8 @@ class Client extends Discord.Client {
       if (interaction.isButton())
         interactionHandlers.get(interaction.customId)?.(interaction);
       if (interaction.isSelectMenu())
+        interactionHandlers.get(interaction.customId)?.(interaction);
+      if (interaction.isModalSubmit())
         interactionHandlers.get(interaction.customId)?.(interaction);
     });
   }

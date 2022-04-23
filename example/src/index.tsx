@@ -1,7 +1,7 @@
 import { createElement, Fragment, Client } from "discord-tsx";
 import * as Discord from "discord.js";
 
-const client = new Client({ intents: [Discord.Intents.FLAGS.GUILDS] });
+const client = new Client({ intents: [Discord.IntentsBitField.Flags.Guilds] });
 
 client.on("ready", () => {
   console.log("ready");

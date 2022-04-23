@@ -14,16 +14,18 @@ client.on("ready", () => {
     ?.channels.cache.get("channel id") as Discord.TextChannel;
 
   channel.send({
-    embeds: [
-      <embed title="title" color="ORANGE">
-        <field name="field 1">
-          field text 1<emoji name="smiling_imp" />
-        </field>
-        <field name="field 2">
-          field text 2<emoji name="pig" />
-        </field>
-      </embed>,
-    ],
+    embeds: (
+      <>
+        <embed title="title" color="ORANGE">
+          <field name="field 1">
+            field text 1<emoji name="smiling_imp" />
+          </field>
+          <field name="field 2">
+            field text 2<emoji name="pig" />
+          </field>
+        </embed>
+      </>
+    ),
   });
 });
 

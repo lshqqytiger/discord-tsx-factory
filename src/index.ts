@@ -10,18 +10,20 @@ declare global {
       embed: Omit<Discord.EmbedData, "color"> & {
         color: Discord.ColorResolvable;
       };
-      field: PartialBy<Omit<Discord.EmbedFieldData, "value">, "inline">;
+      field: Omit<Discord.EmbedFieldData, "value">;
       emoji: { name: string };
       row: Partial<Discord.ActionRowComponentData>;
       button: RequiredBy<Partial<Discord.ButtonComponent>, "customId"> & {
         emoji?: Discord.Emoji | string;
         onClick?: (interaction: Discord.ButtonInteraction) => void;
       };
-      linkbutton: RequiredBy<Partial<Discord.LinkButtonComponentData>, "url">;
+      linkbutton: Omit<Discord.LinkButtonComponentData, "style">;
       select: RequiredBy<
         Partial<Discord.SelectMenuComponentData>,
         "customId"
-      > & { onChange?: (interaction: Discord.SelectMenuInteraction) => void };
+      > & {
+        onChange?: (interaction: Discord.SelectMenuInteraction) => void;
+      };
       option: Discord.SelectMenuComponentOptionData;
       modal: Omit<Discord.ModalData, "components"> & {
         onSubmit?: (interaction: Discord.ModalSubmitInteraction) => void;

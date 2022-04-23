@@ -1,0 +1,12 @@
+{
+  "name": "discord-tsx",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "repository": "https://github.com/lshqqytiger/discord-tsx.git",
+  "author": "Seunghoon Lee <lshqqytiger@naver.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^17.0.25",
+    "discord.js": "^13.6.0"
+  }
+}

@@ -2,15 +2,14 @@ import * as Discord from "discord.js";
 
 type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 type RequiredBy<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
-type Overwrite<T, K> = {
-  [P in Exclude<keyof T, keyof K>]: T[P];
-} & K;
 
 declare global {
   namespace JSX {
     type Element = any; // 임시
     interface IntrinsicElements {
-      embed: Discord.EmbedData;
+      embed: Omit<Discord.EmbedData, "color"> & {
+        color: Discord.ColorResolvable;
+      };
       field: PartialBy<Omit<Discord.EmbedFieldData, "value">, "inline">;
       emoji: { name: string };
       row: Partial<Discord.ActionRowComponentData>;
@@ -45,14 +44,15 @@ const createElement = (
   if (typeof tag == "function") return tag(props, children);
   if (!props) props = {}; // null
   switch (tag) {
-    case "embed":
+    case "embed": {
       props.fields = [];
       props.description = "";
       children.forEach((v) => {
         if (typeof v == "string") props.description += v;
         else props.fields.push(children);
       });
-      return new Discord.EmbedBuilder(props);
+      return new Discord.EmbedBuilder(props).setColor(props.color);
+    }
     case "field":
       return {
         name: props.name,

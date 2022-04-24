@@ -14,7 +14,7 @@ declare global {
     type Element = any; // 임시
     interface IntrinsicElements {
       embed: Omit<Discord.EmbedData, "color"> & {
-        color: Discord.ColorResolvable;
+        color?: Discord.ColorResolvable;
       };
       field: Omit<Discord.EmbedFieldData, "value">;
       emoji: Discord.Emoji;
@@ -62,100 +62,138 @@ declare global {
   }
 }
 
-const interactionHandlers = new Map<
-  string,
-  (interaction: Discord.Interaction) => void
->();
+const interactionHandlers = {
+  button: new Map<string, (interaction: Discord.ButtonInteraction) => void>(),
+  select: new Map<
+    string,
+    (interaction: Discord.SelectMenuInteraction) => void
+  >(),
+  modal: new Map<
+    string,
+    (interaction: Discord.ModalSubmitInteraction) => void
+  >(),
+  command: new Map<string, (interaction: Discord.CommandInteraction) => void>(),
+};
+const ElementBuilder = {
+  embed: (props: JSX.IntrinsicElements["embed"], children: JSX.Element[]) => {
+    props.fields = [];
+    props.description = "";
+    children.forEach((v) => {
+      if (typeof v == "string") props.description += v;
+      else props.fields?.push(v);
+    });
+    return new Discord.EmbedBuilder(props as Discord.EmbedData).setColor(
+      props.color || null
+    );
+  },
+  field: (props: JSX.IntrinsicElements["field"], children: JSX.Element[]) => ({
+    name: props.name,
+    value: children.join(""),
+    inline: props.inline || false,
+  }),
+  emoji: (props: JSX.IntrinsicElements["emoji"]) => props,
+  row: (props: JSX.IntrinsicElements["row"], children: JSX.Element[]) =>
+    new Discord.ActionRowBuilder({
+      ...props,
+      components: children[0] instanceof Array ? children[0] : children,
+    }),
+  button: (props: JSX.IntrinsicElements["button"], children: JSX.Element[]) => {
+    const button = new Discord.ButtonBuilder({
+      ...props,
+      style: props.style || Discord.ButtonStyle.Primary,
+      label: children.join(""),
+    } as Partial<Discord.InteractionButtonComponentData>);
+    interactionHandlers.button.set(
+      props.customId!,
+      props.onClick || ((interaction: Discord.ButtonInteraction) => {})
+    );
+    if (props.emoji) button.setEmoji(props.emoji);
+    return button;
+  },
+  linkbutton: (
+    props: JSX.IntrinsicElements["linkbutton"],
+    children: JSX.Element[]
+  ) =>
+    new Discord.ButtonBuilder({
+      ...props,
+      style: Discord.ButtonStyle.Link,
+      label: children.join(""),
+    }),
+  select: (props: JSX.IntrinsicElements["select"], children: JSX.Element[]) => {
+    const select = new Discord.SelectMenuBuilder(props);
+    select.addOptions(children);
+    interactionHandlers.select.set(
+      props.customId!,
+      props.onChange || ((interaction: Discord.SelectMenuInteraction) => {})
+    );
+    return select;
+  },
+  option: (props: JSX.IntrinsicElements["option"], children: JSX.Element[]) =>
+    props,
+  modal: (props: JSX.IntrinsicElements["modal"], children: JSX.Element[]) => {
+    interactionHandlers.modal.set(
+      props.customId!,
+      props.onSubmit || ((interaction: Discord.ModalSubmitInteraction) => {})
+    );
+    return new Discord.ModalBuilder({
+      ...props,
+      components: children[0] instanceof Array ? children[0] : children,
+    });
+  },
+  input: (props: JSX.IntrinsicElements["input"]) =>
+    new Discord.TextInputBuilder({ ...props, type: 4 }),
+  command: (
+    props: JSX.IntrinsicElements["command"],
+    children: JSX.Element[]
+  ) => ({
+    ...props,
+    options: children,
+  }),
+  subcommand: (
+    props: JSX.IntrinsicElements["subcommand"],
+    children: JSX.Element[]
+  ) => ({ ...props, type: 1, options: children }),
+  subcommandgroup: (
+    props: JSX.IntrinsicElements["subcommandgroup"],
+    children: JSX.Element[]
+  ) => ({ ...props, type: 2, options: children }),
+  string: (
+    props: JSX.IntrinsicElements["string"],
+    children: JSX.Element[]
+  ) => ({ ...props, type: 3, choices: children }),
+  integer: (props: JSX.IntrinsicElements["integer"]) => ({ ...props, type: 4 }),
+  boolean: (props: JSX.IntrinsicElements["boolean"]) => ({ ...props, type: 5 }),
+  user: (props: JSX.IntrinsicElements["user"]) => ({
+    ...props,
+    type: 6,
+  }),
+  channel: (
+    props: JSX.IntrinsicElements["channel"],
+    children: JSX.Element[]
+  ) => ({ ...props, type: 7 }),
+  role: (props: JSX.IntrinsicElements["role"]) => ({
+    ...props,
+    type: 8,
+  }),
+  mentionable: (props: JSX.IntrinsicElements["mentionable"]) => ({
+    ...props,
+    type: 9,
+  }),
+  number: (props: JSX.IntrinsicElements["number"]) => ({ ...props, type: 10 }),
+  attachment: (props: JSX.IntrinsicElements["attachment"]) => ({
+    ...props,
+    type: 11,
+  }),
+  choice: (props: JSX.IntrinsicElements["choice"]) => props,
+};
 const createElement = (
-  tag: keyof globalThis.JSX.IntrinsicElements | Function,
+  tag: keyof JSX.IntrinsicElements | Function,
   props: any,
-  ...children: any[]
+  ...children: JSX.Element[]
 ) => {
-  const components = children[0] instanceof Array ? children[0] : children;
   if (typeof tag == "function") return tag(props, children);
   if (!props) props = {}; // null
-  switch (tag) {
-    case "embed": {
-      props.fields = [];
-      props.description = "";
-      children.forEach((v) => {
-        if (typeof v == "string") props.description += v;
-        else props.fields.push(children);
-      });
-      return new Discord.EmbedBuilder(props).setColor(props.color);
-    }
-    case "field":
-      return {
-        name: props.name,
-        value: children.join(""),
-        inline: props.inline || false,
-      };
-    case "emoji":
-      return props as Discord.Emoji;
-    case "row":
-      return new Discord.ActionRowBuilder({
-        ...props,
-        components,
-      });
-    case "button": {
-      const button = new Discord.ButtonBuilder({
-        ...props,
-        style: props.style || Discord.ButtonStyle.Primary,
-        label: children.join(""),
-      });
-      interactionHandlers.set(props.customId, props.onClick);
-      if (props.emoji) button.setEmoji(props.emoji);
-      return button;
-    }
-    case "linkbutton":
-      return new Discord.ButtonBuilder({
-        ...props,
-        style: Discord.ButtonStyle.Link,
-        label: children.join(""),
-      });
-    case "select": {
-      const select = new Discord.SelectMenuBuilder(props);
-      select.addOptions(children);
-      interactionHandlers.set(props.customId, props.onChange);
-      return select;
-    }
-    case "option":
-      return props as Discord.SelectMenuComponentOptionData;
-    case "modal":
-      interactionHandlers.set(props.customId, props.onSubmit);
-      return new Discord.ModalBuilder({ ...props, components });
-    case "input":
-      return new Discord.TextInputBuilder({ ...props, type: 4 });
-    case "command":
-      return {
-        ...props,
-        options: children,
-      };
-    case "subcommand":
-      return { ...props, type: 1, options: children };
-    case "subcommandgroup":
-      return { ...props, type: 2, options: children };
-    case "string":
-      return { ...props, type: 3, choices: children };
-    case "integer":
-      return { ...props, type: 4 };
-    case "boolean":
-      return { ...props, type: 5 };
-    case "user":
-      return { ...props, type: 6 };
-    case "channel":
-      return { ...props, type: 7 };
-    case "role":
-      return { ...props, type: 8 };
-    case "mentionable":
-      return { ...props, type: 9 };
-    case "number":
-      return { ...props, type: 10 };
-    case "attachment":
-      return { ...props, type: 11 };
-    case "choice":
-      return props as { name: string; value: string };
-  }
+  return ElementBuilder[tag](props, children);
 };
 const Fragment = (props: null, children: JSX.Element[]) => children;
 const deploySlashCommand = async (client: Client, body: JSX.Element) => {
@@ -163,7 +201,7 @@ const deploySlashCommand = async (client: Client, body: JSX.Element) => {
     `/applications/${client.application?.id}/commands`,
     { body }
   );
-  interactionHandlers.set(res.id, body.onSubmit);
+  interactionHandlers.command.set(res.id, body.onSubmit);
   console.log(`Slash command ${res.id}(${res.name}) deployed`);
 };
 const updateSlashCommand = async (
@@ -175,7 +213,7 @@ const updateSlashCommand = async (
     `/applications/${client.application?.id}/commands/${id}`,
     { body }
   );
-  interactionHandlers.set(res.id, body.onSubmit);
+  interactionHandlers.command.set(res.id, body.onSubmit);
   console.log(`Slash command ${res.id}(${res.name}) updated`);
 };
 const registerSlashCommandHandler = (
@@ -183,28 +221,57 @@ const registerSlashCommandHandler = (
     id: string;
     onSubmit: (interaction: Discord.CommandInteraction) => void;
   }[]
-) => {
+) =>
   commands.forEach((v) => {
-    interactionHandlers.set(
+    interactionHandlers.command.set(
       v.id,
       v.onSubmit as (interaction: Discord.Interaction) => void
     );
     console.log(`Slash command handler for ${v.id} registered`);
   });
-};
 
 class Client extends Discord.Client {
   constructor(options: Discord.ClientOptions) {
     super(options);
     this.on("interactionCreate", (interaction: Discord.Interaction) => {
       if (interaction.isButton())
-        interactionHandlers.get(interaction.customId)?.(interaction);
+        interactionHandlers.button.get(interaction.customId)?.(interaction);
       if (interaction.isSelectMenu())
-        interactionHandlers.get(interaction.customId)?.(interaction);
+        interactionHandlers.select.get(interaction.customId)?.(interaction);
       if (interaction.isModalSubmit())
-        interactionHandlers.get(interaction.customId)?.(interaction);
+        interactionHandlers.modal.get(interaction.customId)?.(interaction);
       if (interaction.isCommand())
-        interactionHandlers.get(interaction.commandId)?.(interaction);
+        interactionHandlers.command.get(interaction.commandId)?.(interaction);
+    });
+  }
+  async deploySlashCommand(body: JSX.Element) {
+    const res: any = await this.rest.post(
+      `/applications/${this.application?.id}/commands`,
+      { body }
+    );
+    interactionHandlers.command.set(res.id, body.onSubmit);
+    console.log(`Slash command ${res.id}(${res.name}) deployed`);
+  }
+  async updateSlashCommand(id: string, body: JSX.Element) {
+    const res: any = await this.rest.patch(
+      `/applications/${this.application?.id}/commands/${id}`,
+      { body }
+    );
+    interactionHandlers.command.set(res.id, body.onSubmit);
+    console.log(`Slash command ${res.id}(${res.name}) updated`);
+  }
+  registerSlashCommandHandler(
+    ...commands: {
+      id: string;
+      onSubmit: (interaction: Discord.CommandInteraction) => void;
+    }[]
+  ) {
+    commands.forEach((v) => {
+      interactionHandlers.command.set(
+        v.id,
+        v.onSubmit as (interaction: Discord.Interaction) => void
+      );
+      console.log(`Slash command handler for ${v.id} registered`);
     });
   }
 }

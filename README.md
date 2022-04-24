@@ -2,12 +2,10 @@
 
 Write Discord.js component in tsx.
 
-No React, No Babel, Just TypeScript & Discord.js.
-
-discord-tsx currently requires Discord.js v14-dev to utilize Modal without any other dependencies.
+discord-tsx-factory currently requires Discord.js v14-dev to utilize Modal without any other dependencies.
 
 ```tsx
-import { createElement, Fragment, Client } from "discord-tsx";
+import { createElement, Fragment, Client } from "discord-tsx-factory";
 import * as Discord from "discord.js";
 
 const client = new Client({ intents: [...] });
@@ -24,16 +22,16 @@ client.login("your token");
 Using npm
 
 ```bash
-$ npm install --save discord-tsx
+$ npm install --save discord.js@14.0.0-dev.1650672498-3617093 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord-tsx
+$ yarn add discord.js@14.0.0-dev.1650672498-3617093 discord-tsx-factory
 ```
 
-You need to modify your tsconfig.json to use discord-tsx:
+You need to modify your tsconfig.json to use discord-tsx-factory:
 
 ```json
 {

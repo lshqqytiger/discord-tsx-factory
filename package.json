@@ -1,18 +1,18 @@
 {
-  "name": "discord-tsx",
-  "version": "1.0.0",
-  "description": "Lightweight tsx for discord.js.",
+  "name": "discord-tsx-factory",
+  "version": "0.1.1",
+  "description": "Write Discord.js component in tsx without React.",
   "main": "dist/index.js",
-  "repository": "https://github.com/lshqqytiger/discord-tsx.git",
+  "repository": "https://github.com/lshqqytiger/discord-tsx-factory.git",
   "author": "Seunghoon Lee <lshqqytiger@naver.com>",
   "license": "MIT",
   "scripts": {
     "build": "tsc"
   },
   "bugs": {
-    "url": "https://github.com/lshqqytiger/discord-tsx/issues"
+    "url": "https://github.com/lshqqytiger/discord-tsx-factory/issues"
   },
-  "homepage": "https://github.com/lshqqytiger/discord-tsx#readme",
+  "homepage": "https://github.com/lshqqytiger/discord-tsx-factory#readme",
   "devDependencies": {
     "@types/node": "^17.0.25",
     "discord.js": "^14.0.0-dev.1650672498-3617093"

@@ -1,0 +1,5 @@
+.git*
+example
+test
+node_modules
+src

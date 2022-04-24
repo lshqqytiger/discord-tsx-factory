@@ -1,11 +1,19 @@
 {
   "name": "discord-tsx",
   "version": "1.0.0",
+  "description": "Lightweight tsx for discord.js.",
   "main": "dist/index.js",
   "repository": "https://github.com/lshqqytiger/discord-tsx.git",
   "author": "Seunghoon Lee <lshqqytiger@naver.com>",
   "license": "MIT",
-  "dependencies": {
+  "scripts": {
+    "build": "tsc"
+  },
+  "bugs": {
+    "url": "https://github.com/lshqqytiger/discord-tsx/issues"
+  },
+  "homepage": "https://github.com/lshqqytiger/discord-tsx#readme",
+  "devDependencies": {
     "@types/node": "^17.0.25",
     "discord.js": "^14.0.0-dev.1650672498-3617093"
   }

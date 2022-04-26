@@ -170,11 +170,11 @@ const ElementBuilder = {
 };
 const createElement = (
   tag: keyof JSX.IntrinsicElements | Function,
-  props: any = {},
+  props: any,
   ...children: JSX.Element[]
 ) => {
   if (typeof tag == "function") return tag(props, children);
-  return ElementBuilder[tag](props, children);
+  return ElementBuilder[tag](props || {}, children);
 };
 const Fragment = (props: null, children: JSX.Element[]) => children;
 const initializeSlashCommand = async (

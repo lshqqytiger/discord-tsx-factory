@@ -22,13 +22,13 @@ client.login("your token");
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.0.0-dev.1650672498-3617093 discord-tsx-factory
+$ npm install --save discord.js@14.0.0-dev.1650931749-df64d3e discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.0.0-dev.1650672498-3617093 discord-tsx-factory
+$ yarn add discord.js@14.0.0-dev.1650931749-df64d3e discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:
@@ -171,11 +171,7 @@ const command = (
   >
     <subcommandgroup name="group" description="group description">
       <subcommand name="subcommand" description="subcommand description">
-        <string
-          name="param1"
-          description="param1 description"
-          required={true}
-        >
+        <string name="param1" description="param1 description" required={true}>
           <choice name="choice1" value="1" />
           <choice name="choice2" value="2" />
         </string>
@@ -184,14 +180,12 @@ const command = (
   </command>
 );
 
-// register command
-deploySlashCommand(client, command);
-
-// update command
-updateSlashCommand(client, id, command);
-
-// register handler for slash command
-registerSlashCommandHandler({ id: "...", onSubmit: () => {} }, { id: "...", onSubmit: () => {} }, ...);
+/* register or update command.
+   you must call initializeSlashCommand at
+   client's ready event to use slash commands */
+await client.initializeSlashCommand(command);
+// or
+await initializeSlashCommand(client, command);
 ```
 
 # Special Thanks

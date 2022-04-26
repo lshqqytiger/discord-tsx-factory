@@ -62,18 +62,7 @@ declare global {
   }
 }
 
-const interactionHandlers = {
-  button: new Map<string, (interaction: Discord.ButtonInteraction) => void>(),
-  select: new Map<
-    string,
-    (interaction: Discord.SelectMenuInteraction) => void
-  >(),
-  modal: new Map<
-    string,
-    (interaction: Discord.ModalSubmitInteraction) => void
-  >(),
-  command: new Map<string, (interaction: Discord.CommandInteraction) => void>(),
-};
+const interactionHandlers = new Map<string, Function>();
 const ElementBuilder = {
   embed: (props: JSX.IntrinsicElements["embed"], children: JSX.Element[]) => {
     props.fields = [];
@@ -103,10 +92,7 @@ const ElementBuilder = {
       style: props.style || Discord.ButtonStyle.Primary,
       label: children.join(""),
     } as Partial<Discord.InteractionButtonComponentData>);
-    interactionHandlers.button.set(
-      props.customId!,
-      props.onClick || ((interaction: Discord.ButtonInteraction) => {})
-    );
+    if (props.onClick) interactionHandlers.set(props.customId!, props.onClick);
     if (props.emoji) button.setEmoji(props.emoji);
     return button;
   },
@@ -122,19 +108,15 @@ const ElementBuilder = {
   select: (props: JSX.IntrinsicElements["select"], children: JSX.Element[]) => {
     const select = new Discord.SelectMenuBuilder(props);
     select.addOptions(children);
-    interactionHandlers.select.set(
-      props.customId!,
-      props.onChange || ((interaction: Discord.SelectMenuInteraction) => {})
-    );
+    if (props.onChange)
+      interactionHandlers.set(props.customId!, props.onChange);
     return select;
   },
   option: (props: JSX.IntrinsicElements["option"], children: JSX.Element[]) =>
     props,
   modal: (props: JSX.IntrinsicElements["modal"], children: JSX.Element[]) => {
-    interactionHandlers.modal.set(
-      props.customId!,
-      props.onSubmit || ((interaction: Discord.ModalSubmitInteraction) => {})
-    );
+    if (props.onSubmit)
+      interactionHandlers.set(props.customId!, props.onSubmit);
     return new Discord.ModalBuilder({
       ...props,
       components: children[0] instanceof Array ? children[0] : children,
@@ -188,99 +170,47 @@ const ElementBuilder = {
 };
 const createElement = (
   tag: keyof JSX.IntrinsicElements | Function,
-  props: any,
+  props: any = {},
   ...children: JSX.Element[]
 ) => {
   if (typeof tag == "function") return tag(props, children);
-  if (!props) props = {}; // null
   return ElementBuilder[tag](props, children);
 };
 const Fragment = (props: null, children: JSX.Element[]) => children;
-const deploySlashCommand = async (client: Client, body: JSX.Element) => {
+const initializeSlashCommand = async (
+  client: Client,
+  body: JSX.IntrinsicElements["command"]
+) => {
   const res: any = await client.rest.post(
     `/applications/${client.application?.id}/commands`,
     { body }
   );
-  interactionHandlers.command.set(res.id, body.onSubmit);
-  console.log(`Slash command ${res.id}(${res.name}) deployed`);
+  if (body.onSubmit) interactionHandlers.set(body.name, body.onSubmit);
+  console.log(`Slash command ${body.name}(${res.id}) is ready.`);
 };
-const updateSlashCommand = async (
-  client: Client,
-  id: string,
-  body: JSX.Element
-) => {
-  const res: any = await client.rest.patch(
-    `/applications/${client.application?.id}/commands/${id}`,
-    { body }
-  );
-  interactionHandlers.command.set(res.id, body.onSubmit);
-  console.log(`Slash command ${res.id}(${res.name}) updated`);
-};
-const registerSlashCommandHandler = (
-  ...commands: {
-    id: string;
-    onSubmit: (interaction: Discord.CommandInteraction) => void;
-  }[]
-) =>
-  commands.forEach((v) => {
-    interactionHandlers.command.set(
-      v.id,
-      v.onSubmit as (interaction: Discord.Interaction) => void
-    );
-    console.log(`Slash command handler for ${v.id} registered`);
-  });
 
 class Client extends Discord.Client {
   constructor(options: Discord.ClientOptions) {
     super(options);
     this.on("interactionCreate", (interaction: Discord.Interaction) => {
       if (interaction.isButton())
-        interactionHandlers.button.get(interaction.customId)?.(interaction);
+        interactionHandlers.get(interaction.customId)?.(interaction);
       if (interaction.isSelectMenu())
-        interactionHandlers.select.get(interaction.customId)?.(interaction);
+        interactionHandlers.get(interaction.customId)?.(interaction);
       if (interaction.isModalSubmit())
-        interactionHandlers.modal.get(interaction.customId)?.(interaction);
+        interactionHandlers.get(interaction.customId)?.(interaction);
       if (interaction.isCommand())
-        interactionHandlers.command.get(interaction.commandId)?.(interaction);
+        interactionHandlers.get(interaction.commandName)?.(interaction);
     });
   }
-  async deploySlashCommand(body: JSX.Element) {
+  async initializeSlashCommand(body: JSX.IntrinsicElements["command"]) {
     const res: any = await this.rest.post(
       `/applications/${this.application?.id}/commands`,
       { body }
     );
-    interactionHandlers.command.set(res.id, body.onSubmit);
-    console.log(`Slash command ${res.id}(${res.name}) deployed`);
-  }
-  async updateSlashCommand(id: string, body: JSX.Element) {
-    const res: any = await this.rest.patch(
-      `/applications/${this.application?.id}/commands/${id}`,
-      { body }
-    );
-    interactionHandlers.command.set(res.id, body.onSubmit);
-    console.log(`Slash command ${res.id}(${res.name}) updated`);
-  }
-  registerSlashCommandHandler(
-    ...commands: {
-      id: string;
-      onSubmit: (interaction: Discord.CommandInteraction) => void;
-    }[]
-  ) {
-    commands.forEach((v) => {
-      interactionHandlers.command.set(
-        v.id,
-        v.onSubmit as (interaction: Discord.Interaction) => void
-      );
-      console.log(`Slash command handler for ${v.id} registered`);
-    });
+    if (body.onSubmit) interactionHandlers.set(body.name, body.onSubmit);
+    console.log(`Slash command ${body.name}(${res.id}) is ready.`);
   }
 }
 
-export {
-  createElement,
-  Fragment,
-  deploySlashCommand,
-  updateSlashCommand,
-  registerSlashCommandHandler,
-  Client,
-};
+export { createElement, Fragment, initializeSlashCommand, Client };

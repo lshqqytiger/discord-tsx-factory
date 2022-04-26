@@ -188,6 +188,10 @@ await client.initializeSlashCommand(command);
 await initializeSlashCommand(client, command);
 ```
 
+# Performance
+
+Compared to environments using the same version of Discord.js, the differences were mostly 10 ~ 50ms.
+
 # Special Thanks
 
 - [Lotinex](https://github.com/Lotinex)

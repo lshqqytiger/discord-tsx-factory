@@ -13,6 +13,7 @@ declare global {
   namespace JSX {
     type Element = any; // 임시
     interface IntrinsicElements {
+      br: {};
       embed: Omit<Discord.EmbedData, "color" | "footer"> & {
         color?: Discord.ColorResolvable;
         footer?: JSX.IntrinsicElements["footer"];
@@ -66,6 +67,7 @@ declare global {
 
 const interactionHandlers = new Map<string, Function>();
 const ElementBuilder = {
+  br: () => "\n",
   embed: (props: JSX.IntrinsicElements["embed"], children: JSX.Element[]) => {
     props.fields = [];
     props.description = "";

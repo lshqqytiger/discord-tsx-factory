@@ -59,8 +59,12 @@ message.channel.send({
         color="Orange"
         footer={<footer>footer text</footer>} // string also works like 'footer="footer text"'
       >
-        <field name="field 1">field text 1</field>
-        <field name="field 2">field text 2</field>
+        <field name="field 1">field text</field>
+        <field name="field 2">
+          multi-lined
+          <br />
+          text
+        </field>
       </embed>
     </>
   ),

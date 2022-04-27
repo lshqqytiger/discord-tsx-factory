@@ -13,9 +13,11 @@ declare global {
   namespace JSX {
     type Element = any; // 임시
     interface IntrinsicElements {
-      embed: Omit<Discord.EmbedData, "color"> & {
+      embed: Omit<Discord.EmbedData, "color" | "footer"> & {
         color?: Discord.ColorResolvable;
+        footer?: JSX.IntrinsicElements["footer"];
       };
+      footer: Omit<Discord.EmbedFooterData, "text"> | string;
       field: Omit<Discord.EmbedFieldData, "value">;
       emoji: Discord.Emoji;
       row: Partial<Discord.ActionRowComponentData>;
@@ -71,10 +73,15 @@ const ElementBuilder = {
       if (typeof v == "string") props.description += v;
       else props.fields?.push(v);
     });
+    if (props.footer) props.footer = ElementBuilder.footer(props.footer, []);
     return new Discord.EmbedBuilder(props as Discord.EmbedData).setColor(
       props.color || null
     );
   },
+  footer: (props: JSX.IntrinsicElements["footer"], children: JSX.Element[]) =>
+    typeof props === "string"
+      ? { text: props }
+      : { ...props, text: children.join("") },
   field: (props: JSX.IntrinsicElements["field"], children: JSX.Element[]) => ({
     name: props.name,
     value: children.join(""),

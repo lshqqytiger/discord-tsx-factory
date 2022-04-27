@@ -54,7 +54,11 @@ You need to modify your tsconfig.json to use discord-tsx-factory:
 message.channel.send({
   embeds: (
     <>
-      <embed title="title" color="Orange">
+      <embed
+        title="title"
+        color="Orange"
+        footer={<footer>footer text</footer>} // string also works like 'footer="footer text"'
+      >
         <field name="field 1">field text 1</field>
         <field name="field 2">field text 2</field>
       </embed>
@@ -187,12 +191,6 @@ await client.initializeSlashCommand(command);
 // or
 await initializeSlashCommand(client, command);
 ```
-
-# Performance
-
-Compared to environments using the same version of Discord.js, the differences were mostly 10 ~ 50ms.
-
-Considering the communication with the discord server, there were virtually no differences.
 
 # Special Thanks
 

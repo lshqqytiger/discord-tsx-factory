@@ -22,15 +22,12 @@ declare global {
       field: Omit<Discord.EmbedFieldData, "value">;
       emoji: Discord.Emoji;
       row: Partial<Discord.ActionRowComponentData>;
-      button: RequiredBy<Partial<Discord.ButtonComponent>, "customId"> & {
+      button: Partial<Discord.ButtonComponent> & {
         emoji?: Discord.Emoji | string;
         onClick?: (interaction: Discord.ButtonInteraction) => void;
       };
       linkbutton: Omit<Discord.LinkButtonComponentData, "style" | "type">;
-      select: RequiredBy<
-        Partial<Discord.SelectMenuComponentData>,
-        "customId"
-      > & {
+      select: Partial<Discord.SelectMenuComponentData> & {
         onChange?: (interaction: Discord.SelectMenuInteraction) => void;
       };
       option: Discord.SelectMenuComponentOptionData;
@@ -101,7 +98,8 @@ const ElementBuilder = {
       style: props.style || Discord.ButtonStyle.Primary,
       label: children.join(""),
     } as Partial<Discord.InteractionButtonComponentData>);
-    if (props.onClick) interactionHandlers.set(props.customId!, props.onClick);
+    if (props.onClick && props.customId)
+      interactionHandlers.set(props.customId, props.onClick);
     if (props.emoji) button.setEmoji(props.emoji);
     return button;
   },
@@ -117,15 +115,14 @@ const ElementBuilder = {
   select: (props: JSX.IntrinsicElements["select"], children: JSX.Element[]) => {
     const select = new Discord.SelectMenuBuilder(props);
     select.addOptions(children);
-    if (props.onChange)
-      interactionHandlers.set(props.customId!, props.onChange);
+    if (props.onChange && props.customId)
+      interactionHandlers.set(props.customId, props.onChange);
     return select;
   },
   option: (props: JSX.IntrinsicElements["option"], children: JSX.Element[]) =>
     props,
   modal: (props: JSX.IntrinsicElements["modal"], children: JSX.Element[]) => {
-    if (props.onSubmit)
-      interactionHandlers.set(props.customId!, props.onSubmit);
+    if (props.onSubmit) interactionHandlers.set(props.customId, props.onSubmit);
     return new Discord.ModalBuilder({
       ...props,
       components: children[0] instanceof Array ? children[0] : children,

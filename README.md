@@ -22,13 +22,13 @@ client.login("your token");
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.0.0-dev.1650931749-df64d3e discord-tsx-factory
+$ npm install --save discord.js@14.0.0-dev.1651493371-4ba0f56 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.0.0-dev.1650931749-df64d3e discord-tsx-factory
+$ yarn add discord.js@14.0.0-dev.1651493371-4ba0f56 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:
@@ -121,14 +121,14 @@ message.channel.send({
 
 ```tsx
 message.channel.send({
-  embed: <>...</>,
+  embeds: <>...</>,
   components: (
     <>
       <row>
         <button
           customId="btn1"
           onClick={async (button) => {
-            await button.openModal(
+            await button.showModal(
               <modal
                 customId="modal1"
                 title="modal title"

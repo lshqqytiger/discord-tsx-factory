@@ -1,6 +1,6 @@
 {
   "name": "discord-tsx-factory",
-  "version": "0.1.4",
+  "version": "0.1.4-4ba0f56",
   "description": "Write Discord.js component in tsx without React.",
   "main": "dist/index.js",
   "repository": "https://github.com/lshqqytiger/discord-tsx-factory.git",
@@ -15,6 +15,6 @@
   "homepage": "https://github.com/lshqqytiger/discord-tsx-factory#readme",
   "devDependencies": {
     "@types/node": "^17.0.25",
-    "discord.js": "^14.0.0-dev.1650931749-df64d3e"
+    "discord.js": "^14.0.0-dev.1651493371-4ba0f56"
   }
 }

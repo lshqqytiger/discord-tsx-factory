@@ -185,14 +185,32 @@ const createElement = (
 const Fragment = (props: null, children: JSX.Element[]) => children;
 const initializeSlashCommand = async (
   client: Client,
-  body: JSX.IntrinsicElements["command"]
+  commands: JSX.IntrinsicElements["command"][]
 ) => {
-  const res: any = await client.rest.post(
-    `/applications/${client.application?.id}/commands`,
-    { body }
-  );
-  if (body.onSubmit) interactionHandlers.set(body.name, body.onSubmit);
-  console.log(`Slash command ${body.name}(${res.id}) is ready.`);
+  for (let command of commands) {
+    const res: any = await client.rest.post(
+      `/applications/${client.application?.id}/commands`,
+      { body: command }
+    );
+    if (command.onSubmit)
+      interactionHandlers.set(command.name, command.onSubmit);
+    console.log(`Slash command ${command.name}(${res.id}) is ready.`);
+  }
+};
+const deleteSlashCommand = async (
+  client: Client,
+  commands: { name: string }[]
+) => {
+  for (let command of commands) {
+    const res: any = await client.rest.post(
+      `/applications/${client.application?.id}/commands`,
+      { body: { name: command.name, description: "." } }
+    );
+    await client.rest.delete(
+      `/applications/${client.application?.id}/commands/${res.id}`
+    );
+    console.log(`Slash command ${command.name}(${res.id}) is deleted.`);
+  }
 };
 
 class Client extends Discord.Client {
@@ -209,14 +227,35 @@ class Client extends Discord.Client {
         interactionHandlers.get(interaction.commandName)?.(interaction);
     });
   }
-  async initializeSlashCommand(body: JSX.IntrinsicElements["command"]) {
-    const res: any = await this.rest.post(
-      `/applications/${this.application?.id}/commands`,
-      { body }
-    );
-    if (body.onSubmit) interactionHandlers.set(body.name, body.onSubmit);
-    console.log(`Slash command ${body.name}(${res.id}) is ready.`);
+  async initializeSlashCommand(commands: JSX.IntrinsicElements["command"][]) {
+    for (let command of commands) {
+      const res: any = await this.rest.post(
+        `/applications/${this.application?.id}/commands`,
+        { body: command }
+      );
+      if (command.onSubmit)
+        interactionHandlers.set(command.name, command.onSubmit);
+      console.log(`Slash command ${command.name}(${res.id}) is ready.`);
+    }
+  }
+  async deleteSlashCommand(commands: { name: string }[]) {
+    for (let command of commands) {
+      const res: any = await this.rest.post(
+        `/applications/${this.application?.id}/commands`,
+        { body: { name: command.name, description: "." } }
+      );
+      await this.rest.delete(
+        `/applications/${this.application?.id}/commands/${res.id}`
+      );
+      console.log(`Slash command ${command.name}(${res.id}) is deleted.`);
+    }
   }
 }
 
-export { createElement, Fragment, initializeSlashCommand, Client };
+export {
+  createElement,
+  Fragment,
+  initializeSlashCommand,
+  deleteSlashCommand,
+  Client,
+};

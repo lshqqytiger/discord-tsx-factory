@@ -7,26 +7,28 @@ client.on("ready", () => {
   console.log("ready");
 
   client.initializeSlashCommand(
-    <command
-      onSubmit={(event) => {
-        event.reply("reply!");
-      }}
-      name="command"
-      description="description"
-    >
-      <subcommandgroup name="group" description="group description">
-        <subcommand name="subcommand" description="subcommand description">
-          <string
-            name="param1"
-            description="param1 description"
-            required={true}
-          >
-            <choice name="choice1" value="1" />
-            <choice name="choice2" value="2" />
-          </string>
-        </subcommand>
-      </subcommandgroup>
-    </command>
+    <>
+      <command
+        onSubmit={(event) => {
+          event.reply("reply!");
+        }}
+        name="willbedeleted"
+        description="description"
+      >
+        <subcommandgroup name="group" description="group description">
+          <subcommand name="subcommand" description="subcommand description">
+            <string
+              name="param1"
+              description="param1 description"
+              required={true}
+            >
+              <choice name="choice1" value="1" />
+              <choice name="choice2" value="2" />
+            </string>
+          </subcommand>
+        </subcommandgroup>
+      </command>
+    </>
   );
 });
 

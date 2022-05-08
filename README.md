@@ -162,30 +162,55 @@ message.channel.send({
 });
 ```
 
-## [Experimental] Slash Command
+## Slash Command
 
 I'm not familiar with Slash Command.
 
 I will continue to improve this.
 
+### Register & Update
+
 ```tsx
 const command = (
-  <command
-    onSubmit={(event) => {
-      event.reply("reply!");
-    }}
-    name="command"
-    description="description"
-  >
-    <subcommandgroup name="group" description="group description">
-      <subcommand name="subcommand" description="subcommand description">
-        <string name="param1" description="param1 description" required={true}>
-          <choice name="choice1" value="1" />
-          <choice name="choice2" value="2" />
-        </string>
-      </subcommand>
-    </subcommandgroup>
-  </command>
+  <>
+    <command
+      onSubmit={(event) => {
+        event.reply("reply!");
+      }}
+      name="command"
+      description="description"
+    >
+      <subcommandgroup name="group" description="group description">
+        <subcommand name="subcommand" description="subcommand description">
+          <string
+            name="param1"
+            description="param1 description"
+            required={true}
+          >
+            <choice name="choice1" value="1" />
+            <choice name="choice2" value="2" />
+          </string>
+        </subcommand>
+      </subcommandgroup>
+    </command>
+    <command
+      onSubmit={(event) => {
+        event.reply("reply!");
+      }}
+      name="command2"
+      description="description"
+    >
+      <subcommandgroup name="group" description="group description">
+        <subcommand name="subcommand" description="subcommand description">
+          <attachment
+            name="attachment"
+            description="attachment description"
+            required={true}
+          />
+        </subcommand>
+      </subcommandgroup>
+    </command>
+  </>
 );
 
 /* register or update command.
@@ -194,6 +219,28 @@ const command = (
 await client.initializeSlashCommand(command);
 // or
 await initializeSlashCommand(client, command);
+```
+
+### Delete
+
+```tsx
+// description(required), onSubmit, children will be ignored.
+await client.deleteSlashCommand(
+  // or deleteSlashCommand(client, ...);
+  <>
+    <command name="command1" description="" />
+    <command name="command2" description="" />
+  </>
+);
+// or { name: string }[]
+await client.deleteSlashCommand([
+  {
+    name: "command1",
+  },
+  {
+    name: "command2",
+  },
+]);
 ```
 
 # Special Thanks

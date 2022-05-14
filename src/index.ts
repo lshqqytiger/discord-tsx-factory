@@ -1,8 +1,5 @@
 import * as Discord from "discord.js";
 
-type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-type RequiredBy<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
-
 interface CommandOption {
   name: string;
   description: string;

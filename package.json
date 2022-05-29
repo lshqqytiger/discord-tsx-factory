@@ -15,6 +15,6 @@
   "homepage": "https://github.com/lshqqytiger/discord-tsx-factory#readme",
   "devDependencies": {
     "@types/node": "^17.0.25",
-    "discord.js": "^14.0.0-dev.1652918983-adf461b"
+    "discord.js": "^14.0.0-dev.1653480262-68d5169"
   }
 }

@@ -66,8 +66,8 @@ const ElementBuilder = {
     props.fields = [];
     props.description = "";
     children.forEach((v) => {
-      if (typeof v == "string") props.description += v;
-      else props.fields?.push(v);
+      if (typeof v == "object") props.fields?.push(v);
+      else props.description += String(v);
     });
     if (props.footer) props.footer = ElementBuilder.footer(props.footer, []);
     return new Discord.EmbedBuilder(props as Discord.EmbedData).setColor(

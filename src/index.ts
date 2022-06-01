@@ -3,7 +3,7 @@ import * as Discord from "discord.js";
 interface CommandOption {
   name: string;
   description: string;
-  required: boolean;
+  required?: boolean;
 }
 
 declare global {
@@ -145,27 +145,39 @@ const ElementBuilder = {
   string: (
     props: JSX.IntrinsicElements["string"],
     children: JSX.Element[]
-  ) => ({ ...props, type: 3, choices: children }),
-  integer: (props: JSX.IntrinsicElements["integer"]) => ({ ...props, type: 4 }),
-  boolean: (props: JSX.IntrinsicElements["boolean"]) => ({ ...props, type: 5 }),
+  ) => ({ required: false, ...props, type: 3, choices: children }),
+  integer: (props: JSX.IntrinsicElements["integer"]) => ({
+    required: false,
+    ...props,
+    type: 4,
+  }),
+  boolean: (props: JSX.IntrinsicElements["boolean"]) => ({
+    required: false,
+    ...props,
+    type: 5,
+  }),
   user: (props: JSX.IntrinsicElements["user"]) => ({
+    required: false,
     ...props,
     type: 6,
   }),
   channel: (
     props: JSX.IntrinsicElements["channel"],
     children: JSX.Element[]
-  ) => ({ ...props, type: 7 }),
+  ) => ({ required: false, ...props, type: 7 }),
   role: (props: JSX.IntrinsicElements["role"]) => ({
+    required: false,
     ...props,
     type: 8,
   }),
   mentionable: (props: JSX.IntrinsicElements["mentionable"]) => ({
+    required: false,
     ...props,
     type: 9,
   }),
   number: (props: JSX.IntrinsicElements["number"]) => ({ ...props, type: 10 }),
   attachment: (props: JSX.IntrinsicElements["attachment"]) => ({
+    required: false,
     ...props,
     type: 11,
   }),
@@ -180,35 +192,6 @@ const createElement = (
   return ElementBuilder[tag](props || {}, children);
 };
 const Fragment = (props: null, children: JSX.Element[]) => children;
-const initializeSlashCommand = async (
-  client: Client,
-  commands: JSX.IntrinsicElements["command"][]
-) => {
-  for (let command of commands) {
-    const res: any = await client.rest.post(
-      `/applications/${client.application?.id}/commands`,
-      { body: command }
-    );
-    if (command.onSubmit)
-      interactionHandlers.set(command.name, command.onSubmit);
-    console.log(`Slash command ${command.name}(${res.id}) is ready.`);
-  }
-};
-const deleteSlashCommand = async (
-  client: Client,
-  commands: { name: string }[]
-) => {
-  for (let command of commands) {
-    const res: any = await client.rest.post(
-      `/applications/${client.application?.id}/commands`,
-      { body: { name: command.name, description: "." } }
-    );
-    await client.rest.delete(
-      `/applications/${client.application?.id}/commands/${res.id}`
-    );
-    console.log(`Slash command ${command.name}(${res.id}) is deleted.`);
-  }
-};
 
 class Client extends Discord.Client {
   constructor(options: Discord.ClientOptions) {
@@ -249,10 +232,4 @@ class Client extends Discord.Client {
   }
 }
 
-export {
-  createElement,
-  Fragment,
-  initializeSlashCommand,
-  deleteSlashCommand,
-  Client,
-};
+export { createElement, Fragment, Client };

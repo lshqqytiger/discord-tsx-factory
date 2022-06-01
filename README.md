@@ -217,8 +217,6 @@ const command = (
    you must call initializeSlashCommand at
    client's ready event to use slash commands */
 await client.initializeSlashCommand(command);
-// or
-await initializeSlashCommand(client, command);
 ```
 
 ### Delete

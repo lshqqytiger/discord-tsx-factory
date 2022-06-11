@@ -116,13 +116,12 @@ const ElementBuilder = {
     }),
   select: (props: JSX.IntrinsicElements["select"], children: JSX.Element[]) => {
     const select = new Discord.SelectMenuBuilder(props);
-    select.addOptions(children);
+    select.addOptions(children[0] instanceof Array ? children[0] : children);
     if (props.onChange && props.customId)
       interactionHandlers.set(props.customId, props.onChange);
     return select;
   },
-  option: (props: JSX.IntrinsicElements["option"], children: JSX.Element[]) =>
-    props,
+  option: (props: JSX.IntrinsicElements["option"]) => props,
   modal: (props: JSX.IntrinsicElements["modal"], children: JSX.Element[]) => {
     if (props.onSubmit) interactionHandlers.set(props.customId, props.onSubmit);
     return new Discord.ModalBuilder({
@@ -138,20 +137,33 @@ const ElementBuilder = {
     children: JSX.Element[]
   ) => ({
     ...props,
-    options: children,
+    options: children[0] instanceof Array ? children[0] : children,
   }),
   subcommand: (
     props: JSX.IntrinsicElements["subcommand"],
     children: JSX.Element[]
-  ) => ({ ...props, type: 1, options: children }),
+  ) => ({
+    ...props,
+    type: 1,
+    options: children[0] instanceof Array ? children[0] : children,
+  }),
   subcommandgroup: (
     props: JSX.IntrinsicElements["subcommandgroup"],
     children: JSX.Element[]
-  ) => ({ ...props, type: 2, options: children }),
+  ) => ({
+    ...props,
+    type: 2,
+    options: children[0] instanceof Array ? children[0] : children,
+  }),
   string: (
     props: JSX.IntrinsicElements["string"],
     children: JSX.Element[]
-  ) => ({ required: false, ...props, type: 3, choices: children }),
+  ) => ({
+    required: false,
+    ...props,
+    type: 3,
+    choices: children[0] instanceof Array ? children[0] : children,
+  }),
   integer: (props: JSX.IntrinsicElements["integer"]) => ({
     required: false,
     ...props,
@@ -167,10 +179,11 @@ const ElementBuilder = {
     ...props,
     type: 6,
   }),
-  channel: (
-    props: JSX.IntrinsicElements["channel"],
-    children: JSX.Element[]
-  ) => ({ required: false, ...props, type: 7 }),
+  channel: (props: JSX.IntrinsicElements["channel"]) => ({
+    required: false,
+    ...props,
+    type: 7,
+  }),
   role: (props: JSX.IntrinsicElements["role"]) => ({
     required: false,
     ...props,

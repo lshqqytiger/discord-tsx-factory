@@ -2,7 +2,7 @@
 
 Write Discord.js component in tsx.
 
-discord-tsx-factory currently requires Discord.js v14-dev to utilize Modal without any other dependencies.
+discord-tsx-factory currently requires Discord.js v14-dev.
 
 ```tsx
 import { createElement, Fragment, Client } from "discord-tsx-factory";
@@ -22,13 +22,13 @@ client.login("your token");
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.0.0-dev.1653480262-68d5169 discord-tsx-factory
+$ npm install --save discord.js@14.0.0-dev.1654862727-0415300 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.0.0-dev.1653480262-68d5169 discord-tsx-factory
+$ yarn add discord.js@14.0.0-dev.1654862727-0415300 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:
@@ -133,7 +133,7 @@ message.channel.send({
                 customId="modal1"
                 title="modal title"
                 onSubmit={(modal) => {
-                  modal.reply(modal.components[0].components[0].value);
+                  modal.reply(modal.fields.getTextInputValue("input1"));
                 }}
               >
                 <row>

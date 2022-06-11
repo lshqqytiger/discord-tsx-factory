@@ -28,7 +28,12 @@ declare global {
         onChange?: (interaction: Discord.SelectMenuInteraction) => void;
       };
       option: Discord.SelectMenuComponentOptionData;
-      modal: Omit<Discord.ModalData, "components"> & {
+      modal: Omit<Discord.ModalData, "type" | "components"> & {
+        type?:
+          | Discord.ComponentType.ActionRow
+          | Discord.ComponentType.TextInput;
+        customId: string;
+        title: string;
         onSubmit?: (interaction: Discord.ModalSubmitInteraction) => void;
       };
       input: Omit<Discord.TextInputComponentData, "type">;
@@ -121,9 +126,10 @@ const ElementBuilder = {
   modal: (props: JSX.IntrinsicElements["modal"], children: JSX.Element[]) => {
     if (props.onSubmit) interactionHandlers.set(props.customId, props.onSubmit);
     return new Discord.ModalBuilder({
-      ...props,
+      type: (props.type as any) || 1,
+      custom_id: props.customId,
       components: children[0] instanceof Array ? children[0] : children,
-    });
+    }).setTitle(props.title);
   },
   input: (props: JSX.IntrinsicElements["input"]) =>
     new Discord.TextInputBuilder({ ...props, type: 4 }),
@@ -198,13 +204,19 @@ class Client extends Discord.Client {
     super(options);
     this.on("interactionCreate", (interaction: Discord.Interaction) => {
       if (interaction.isButton())
-        interactionHandlers.get(interaction.customId)?.(interaction);
+        return interactionHandlers.get(interaction.customId)?.(interaction);
       if (interaction.isSelectMenu())
-        interactionHandlers.get(interaction.customId)?.(interaction);
-      if (interaction.isModalSubmit())
-        interactionHandlers.get(interaction.customId)?.(interaction);
-      if (interaction.isCommand())
-        interactionHandlers.get(interaction.commandName)?.(interaction);
+        return interactionHandlers.get(interaction.customId)?.(interaction);
+      /*if (interaction.())
+        interactionHandlers.get(interaction.customId)?.(interaction);*/
+      if (interaction.isChatInputCommand())
+        return interactionHandlers.get(interaction.commandName)?.(interaction);
+
+      // modal submit (temp)
+      // @ts-ignore
+      if (interaction.customId && interactionHandlers.get(interaction.customId))
+        // @ts-ignore
+        interactionHandlers.get(interaction.customId)(interaction);
     });
   }
   async initializeSlashCommand(commands: JSX.IntrinsicElements["command"][]) {

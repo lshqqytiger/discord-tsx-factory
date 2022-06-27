@@ -71,7 +71,8 @@ const ElementBuilder = {
     props.fields = [];
     props.description = "";
     children.forEach((v) => {
-      if (typeof v == "object") props.fields?.push(v);
+      if (v instanceof Array) props.fields?.push(...v);
+      else if (typeof v == "object") props.fields?.push(v);
       else props.description += String(v);
     });
     if (props.footer) props.footer = ElementBuilder.footer(props.footer, []);
@@ -211,6 +212,7 @@ const createElement = (
   return ElementBuilder[tag](props || {}, children);
 };
 const Fragment = (props: null, children: JSX.Element[]) => children;
+const deleteHandler = (key: string) => interactionHandlers.delete(key);
 
 class Client extends Discord.Client {
   constructor(options: Discord.ClientOptions) {
@@ -257,4 +259,4 @@ class Client extends Discord.Client {
   }
 }
 
-export { createElement, Fragment, Client };
+export { createElement, Fragment, Client, deleteHandler };

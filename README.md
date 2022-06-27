@@ -22,13 +22,13 @@ client.login("your token");
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.0.0-dev.1654862727-0415300 discord-tsx-factory
+$ npm install --save discord.js@14.0.0-dev.1656158629-c4653f9 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.0.0-dev.1654862727-0415300 discord-tsx-factory
+$ yarn add discord.js@14.0.0-dev.1656158629-c4653f9 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:

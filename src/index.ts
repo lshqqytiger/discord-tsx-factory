@@ -17,7 +17,7 @@ declare global {
       };
       footer: Omit<Discord.EmbedFooterData, "text"> | string;
       field: Omit<Discord.EmbedFieldData, "value">;
-      emoji: Discord.Emoji;
+      emoji: { emoji: Discord.Emoji | Discord.EmojiResolvable };
       row: Partial<Discord.ActionRowComponentData>;
       button: Partial<Discord.ButtonComponent> & {
         emoji?: Discord.Emoji | string;
@@ -89,7 +89,7 @@ const ElementBuilder = {
     value: children.join(""),
     inline: props.inline || false,
   }),
-  emoji: (props: JSX.IntrinsicElements["emoji"]) => props,
+  emoji: (props: JSX.IntrinsicElements["emoji"]) => props.emoji,
   row: (props: JSX.IntrinsicElements["row"], children: JSX.Element[]) =>
     new Discord.ActionRowBuilder({
       ...props,
@@ -235,6 +235,7 @@ class Client extends Discord.Client {
     });
   }
   async initializeSlashCommand(commands: JSX.IntrinsicElements["command"][]) {
+    const cmds = [];
     for (let command of commands) {
       const res: any = await this.rest.post(
         `/applications/${this.application?.id}/commands`,
@@ -242,10 +243,12 @@ class Client extends Discord.Client {
       );
       if (command.onSubmit)
         interactionHandlers.set(command.name, command.onSubmit);
-      console.log(`Slash command ${command.name}(${res.id}) is ready.`);
+      cmds.push({ id: res.id, name: res.name });
     }
+    return cmds;
   }
   async deleteSlashCommand(commands: { name: string }[]) {
+    const cmds = [];
     for (let command of commands) {
       const res: any = await this.rest.post(
         `/applications/${this.application?.id}/commands`,
@@ -254,8 +257,9 @@ class Client extends Discord.Client {
       await this.rest.delete(
         `/applications/${this.application?.id}/commands/${res.id}`
       );
-      console.log(`Slash command ${command.name}(${res.id}) is deleted.`);
+      cmds.push({ id: res.id, name: res.name });
     }
+    return cmds;
   }
 }
 

@@ -46,6 +46,20 @@ You need to modify your tsconfig.json to use discord-tsx-factory:
 }
 ```
 
+or set discord-tsx-factory as jsxImportSource
+
+```json
+{
+  "compilerOptions": {
+    ...
+    "jsx": "preserve",
+    "jsxImportSource": "discord-tsx-factory",
+    ...
+  },
+  ...
+}
+```
+
 # Example usage
 
 ## Embed

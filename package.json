@@ -1,11 +1,17 @@
 {
   "name": "discord-tsx-factory",
-  "version": "0.1.7a-f0b68d5",
+  "version": "0.1.7-b-f0b68d5",
   "description": "Write Discord.js component in tsx without React.",
   "main": "dist/index.js",
   "repository": "https://github.com/lshqqytiger/discord-tsx-factory.git",
   "author": "Seunghoon Lee <lshqqytiger@naver.com>",
   "license": "MIT",
+  "keywords": [
+    "discord.js",
+    "discord",
+    "tsx",
+    "jsx"
+  ],
   "scripts": {
     "build": "tsc"
   },

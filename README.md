@@ -22,13 +22,13 @@ client.login("your token");
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.0.0-dev.1657411900-f0b68d5 discord-tsx-factory
+$ npm install --save discord.js@14.0.0-dev.1657757514-fe34f48 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.0.0-dev.1657411900-f0b68d5 discord-tsx-factory
+$ yarn add discord.js@14.0.0-dev.1657757514-fe34f48 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:
@@ -40,20 +40,6 @@ You need to modify your tsconfig.json to use discord-tsx-factory:
     "jsx": "react",
     "jsxFactory": "createElement",
     "jsxFragmentFactory": "Fragment",
-    ...
-  },
-  ...
-}
-```
-
-or set discord-tsx-factory as jsxImportSource
-
-```json
-{
-  "compilerOptions": {
-    ...
-    "jsx": "preserve",
-    "jsxImportSource": "discord-tsx-factory",
     ...
   },
   ...
@@ -178,9 +164,7 @@ message.channel.send({
 
 ## Slash Command
 
-I'm not familiar with Slash Command.
-
-I will continue to improve this.
+Writing slash commands or context menu commands with tsx is not recommended.
 
 ### Register & Update
 

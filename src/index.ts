@@ -1,5 +1,7 @@
 import * as Discord from "discord.js";
 
+type PartialOf<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
+
 interface CommandOption {
   name: string;
   description: string;
@@ -15,8 +17,8 @@ declare global {
         color?: Discord.ColorResolvable;
         footer?: JSX.IntrinsicElements["footer"];
       };
-      footer: Omit<Discord.EmbedFooterData, "text"> | string;
-      field: Omit<Discord.EmbedFieldData, "value">;
+      footer: PartialOf<Discord.EmbedFooterData, "text"> | string;
+      field: PartialOf<Discord.EmbedFieldData, "value">;
       emoji: { emoji: Discord.Emoji | Discord.EmojiResolvable };
       row: Partial<Discord.ActionRowComponentData>;
       button: Partial<Discord.ButtonComponent> & {
@@ -83,10 +85,10 @@ const ElementBuilder = {
   footer: (props: JSX.IntrinsicElements["footer"], children: JSX.Element[]) =>
     typeof props === "string"
       ? { text: props }
-      : { ...props, text: children.join("") },
+      : { ...props, text: props.text || children.join("") },
   field: (props: JSX.IntrinsicElements["field"], children: JSX.Element[]) => ({
     name: props.name,
-    value: children.join(""),
+    value: props.value || children.join(""),
     inline: props.inline || false,
   }),
   emoji: (props: JSX.IntrinsicElements["emoji"]) => props.emoji,

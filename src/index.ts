@@ -71,12 +71,14 @@ const ElementBuilder = {
   br: () => "\n",
   embed: (props: JSX.IntrinsicElements["embed"], children: JSX.Element[]) => {
     props.fields = [];
-    props.description = "";
-    children.forEach((v) => {
-      if (v instanceof Array) props.fields?.push(...v);
-      else if (typeof v == "object") props.fields?.push(v);
-      else props.description += String(v);
-    });
+    if (!props.description) {
+      props.description = "";
+      children.forEach((v) => {
+        if (v instanceof Array) props.fields?.push(...v);
+        else if (typeof v == "object") props.fields?.push(v);
+        else props.description += String(v);
+      });
+    }
     if (props.footer) props.footer = ElementBuilder.footer(props.footer, []);
     return new Discord.EmbedBuilder(props as Discord.EmbedData).setColor(
       props.color || null
@@ -101,7 +103,7 @@ const ElementBuilder = {
     const button = new Discord.ButtonBuilder({
       ...props,
       style: props.style || Discord.ButtonStyle.Primary,
-      label: children.join(""),
+      label: props.label || children.join(""),
     } as Partial<Discord.InteractionButtonComponentData>);
     if (props.onClick && props.customId)
       interactionHandlers.set(props.customId, props.onClick);
@@ -115,7 +117,7 @@ const ElementBuilder = {
     new Discord.ButtonBuilder({
       ...props,
       style: Discord.ButtonStyle.Link,
-      label: children.join(""),
+      label: props.label || children.join(""),
     }),
   select: (props: JSX.IntrinsicElements["select"], children: JSX.Element[]) => {
     const select = new Discord.SelectMenuBuilder(props);

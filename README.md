@@ -71,6 +71,21 @@ message.channel.send({
 });
 ```
 
+If 'description' property is specified, its children will be ignored.
+
+```tsx
+message.channel.send({
+  embeds: (
+    <>
+      <embed title="title" color="Orange" description="description" />
+      <embed title="title" color="Orange" description="description">
+        It will be ignored.
+      </embed>
+    </>
+  ),
+});
+```
+
 ## Button
 
 ```tsx
@@ -88,6 +103,32 @@ message.channel.send({
           primary button
         </button>
         <linkbutton url="https://github.com">link button</linkbutton>
+      </row>
+    </>
+  ),
+});
+```
+
+If 'label' property is specified, its children will be ignored.
+
+```tsx
+message.channel.send({
+  content: "message",
+  components: (
+    <>
+      <row>
+        <button
+          customId="button1"
+          label="primary button"
+          onClick={(event) => {
+            event.reply("button1 clicked");
+          }}
+        >
+          It will be ignored
+        </button>
+        <linkbutton label="link button" url="https://github.com">
+          It will be ignored
+        </linkbutton>
       </row>
     </>
   ),
@@ -180,11 +221,7 @@ const command = (
     >
       <subcommandgroup name="group" description="group description">
         <subcommand name="subcommand" description="subcommand description">
-          <string
-            name="param1"
-            description="param1 description"
-            required={true}
-          >
+          <string name="param1" description="param1 description" required>
             <choice name="choice1" value="1" />
             <choice name="choice2" value="2" />
           </string>
@@ -203,7 +240,7 @@ const command = (
           <attachment
             name="attachment"
             description="attachment description"
-            required={true}
+            required
           />
         </subcommand>
       </subcommandgroup>
@@ -222,12 +259,16 @@ await client.initializeSlashCommand(command);
 ```tsx
 // description(required), onSubmit, children will be ignored.
 await client.deleteSlashCommand(
-  // or deleteSlashCommand(client, ...);
   <>
     <command name="command1" description="" />
     <command name="command2" description="" />
   </>
 );
+```
+
+You can register/delete slash commands using Client.initializeSlashCommand/Client.deleteSlashCommand with non-tsx object.
+
+```tsx
 // or { name: string }[]
 await client.deleteSlashCommand([
   {

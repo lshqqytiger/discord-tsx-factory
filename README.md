@@ -69,7 +69,7 @@ message.channel.send({
 });
 ```
 
-If 'description' property is specified, its children will be ignored.
+If `description` property is specified, its children will be ignored.
 
 ```tsx
 message.channel.send({
@@ -85,6 +85,10 @@ message.channel.send({
 ```
 
 ## Button
+
+`onClick` is optional.
+
+You can handle click event using `client.on("interactionCreate", ...);`.
 
 ```tsx
 message.channel.send({
@@ -107,7 +111,7 @@ message.channel.send({
 });
 ```
 
-If 'label' property is specified, its children will be ignored.
+If `label` property is specified, its children will be ignored.
 
 ```tsx
 message.channel.send({
@@ -135,6 +139,10 @@ message.channel.send({
 
 ## Select & Option
 
+`onChange` is optional.
+
+You can handle click event using `client.on("interactionCreate", ...);`.
+
 ```tsx
 message.channel.send({
   content: "message",
@@ -157,6 +165,10 @@ message.channel.send({
 ```
 
 ## Modal
+
+`onSubmit` is optional.
+
+You can handle click event using `client.on("interactionCreate", ...);`.
 
 ```tsx
 message.channel.send({
@@ -206,6 +218,10 @@ message.channel.send({
 Writing slash commands or context menu commands with tsx is not recommended.
 
 ### Register & Update
+
+`onSubmit` is optional.
+
+You can handle click event using `client.on("interactionCreate", ...);`.
 
 ```tsx
 const command = (

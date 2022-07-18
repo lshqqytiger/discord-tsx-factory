@@ -88,7 +88,7 @@ message.channel.send({
 
 `onClick` is optional.
 
-You can handle click event using `client.on("interactionCreate", ...);`.
+You can handle button interaction using `client.on("interactionCreate", ...);`.
 
 ```tsx
 message.channel.send({
@@ -141,7 +141,7 @@ message.channel.send({
 
 `onChange` is optional.
 
-You can handle click event using `client.on("interactionCreate", ...);`.
+You can handle select interaction using `client.on("interactionCreate", ...);`.
 
 ```tsx
 message.channel.send({
@@ -168,7 +168,7 @@ message.channel.send({
 
 `onSubmit` is optional.
 
-You can handle click event using `client.on("interactionCreate", ...);`.
+You can handle modal interaction using `client.on("interactionCreate", ...);`.
 
 ```tsx
 message.channel.send({
@@ -221,7 +221,7 @@ Writing slash commands or context menu commands with tsx is not recommended.
 
 `onSubmit` is optional.
 
-You can handle click event using `client.on("interactionCreate", ...);`.
+You can handle slash command interaction using `client.on("interactionCreate", ...);`.
 
 ```tsx
 const command = (
@@ -280,7 +280,7 @@ await client.deleteSlashCommand(
 );
 ```
 
-You can register/delete slash commands using Client.initializeSlashCommand/Client.deleteSlashCommand with non-tsx object.
+You can register/delete slash commands using `Client.initializeSlashCommand`/`Client.deleteSlashCommand` with non-tsx object.
 
 ```tsx
 // or { name: string }[]

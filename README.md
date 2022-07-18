@@ -217,6 +217,8 @@ message.channel.send({
 
 Writing slash commands or context menu commands with tsx is not recommended.
 
+It can be removed in the future version.
+
 ### Register & Update
 
 `onSubmit` is optional.

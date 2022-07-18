@@ -88,7 +88,7 @@ message.channel.send({
 
 `onClick` is optional.
 
-You can handle click event using `client.on("interactionCreate", ...);`.
+You can handle button interaction using `client.on("interactionCreate", ...);`.
 
 ```tsx
 message.channel.send({
@@ -141,7 +141,7 @@ message.channel.send({
 
 `onChange` is optional.
 
-You can handle click event using `client.on("interactionCreate", ...);`.
+You can handle select interaction using `client.on("interactionCreate", ...);`.
 
 ```tsx
 message.channel.send({
@@ -168,7 +168,7 @@ message.channel.send({
 
 `onSubmit` is optional.
 
-You can handle click event using `client.on("interactionCreate", ...);`.
+You can handle modal interaction using `client.on("interactionCreate", ...);`.
 
 ```tsx
 message.channel.send({
@@ -211,87 +211,6 @@ message.channel.send({
     </>
   ),
 });
-```
-
-## Slash Command
-
-Writing slash commands or context menu commands with tsx is not recommended.
-
-### Register & Update
-
-`onSubmit` is optional.
-
-You can handle click event using `client.on("interactionCreate", ...);`.
-
-```tsx
-const command = (
-  <>
-    <command
-      onSubmit={(event) => {
-        event.reply("reply!");
-      }}
-      name="command"
-      description="description"
-    >
-      <subcommandgroup name="group" description="group description">
-        <subcommand name="subcommand" description="subcommand description">
-          <string name="param1" description="param1 description" required>
-            <choice name="choice1" value="1" />
-            <choice name="choice2" value="2" />
-          </string>
-        </subcommand>
-      </subcommandgroup>
-    </command>
-    <command
-      onSubmit={(event) => {
-        event.reply("reply!");
-      }}
-      name="command2"
-      description="description"
-    >
-      <subcommandgroup name="group" description="group description">
-        <subcommand name="subcommand" description="subcommand description">
-          <attachment
-            name="attachment"
-            description="attachment description"
-            required
-          />
-        </subcommand>
-      </subcommandgroup>
-    </command>
-  </>
-);
-
-/* register or update command.
-   you must call initializeSlashCommand at
-   client's ready event to use slash commands */
-await client.initializeSlashCommand(command);
-```
-
-### Delete
-
-```tsx
-// description(required), onSubmit, children will be ignored.
-await client.deleteSlashCommand(
-  <>
-    <command name="command1" description="" />
-    <command name="command2" description="" />
-  </>
-);
-```
-
-You can register/delete slash commands using Client.initializeSlashCommand/Client.deleteSlashCommand with non-tsx object.
-
-```tsx
-// or { name: string }[]
-await client.deleteSlashCommand([
-  {
-    name: "command1",
-  },
-  {
-    name: "command2",
-  },
-]);
 ```
 
 # Special Thanks

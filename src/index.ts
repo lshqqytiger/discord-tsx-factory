@@ -18,7 +18,7 @@ declare global {
         footer?: JSX.IntrinsicElements["footer"];
       };
       footer: PartialOf<Discord.EmbedFooterData, "text"> | string;
-      field: PartialOf<Discord.EmbedFieldData, "value">;
+      field: PartialOf<Discord.EmbedField, "value" | "inline">;
       emoji: { emoji: Discord.Emoji | Discord.EmojiResolvable };
       row: Partial<Discord.ActionRowComponentData>;
       button: Partial<Discord.ButtonComponent> & {

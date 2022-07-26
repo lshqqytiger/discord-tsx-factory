@@ -2,12 +2,6 @@ import * as Discord from "discord.js";
 
 type PartialOf<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
 
-interface CommandOption {
-  name: string;
-  description: string;
-  required?: boolean;
-}
-
 export type DiscordFragment = Iterable<DiscordNode>;
 export type DiscordNode =
   | DiscordElement
@@ -61,29 +55,6 @@ declare global {
         onSubmit?: (interaction: Discord.ModalSubmitInteraction) => void;
       };
       input: Omit<Discord.TextInputComponentData, "type">;
-      command: {
-        name: string;
-        description: string;
-        onSubmit?: (interaction: Discord.CommandInteraction) => void;
-      };
-      subcommand: {
-        name: string;
-        description: string;
-      };
-      subcommandgroup: {
-        name: string;
-        description: string;
-      };
-      string: CommandOption;
-      integer: CommandOption;
-      boolean: CommandOption;
-      user: CommandOption;
-      channel: CommandOption;
-      role: CommandOption;
-      mentionable: CommandOption;
-      number: CommandOption;
-      attachment: CommandOption;
-      choice: { name: string; value: string };
     }
   }
 }
@@ -106,7 +77,7 @@ const ElementBuilder = {
       props.color || null
     );
   },
-  footer: (props: JSX.IntrinsicElements["footer"], children: JSX.Element[]) =>
+  footer: (props: JSX.IntrinsicElements["footer"], children: DiscordNode[]) =>
     typeof props === "string"
       ? { text: props }
       : { ...props, text: props.text || children.join("") },
@@ -160,75 +131,6 @@ const ElementBuilder = {
   },
   input: (props: JSX.IntrinsicElements["input"]) =>
     new Discord.TextInputBuilder({ ...props, type: 4 }),
-  command: (
-    props: JSX.IntrinsicElements["command"],
-    children: DiscordNode[]
-  ) => ({
-    ...props,
-    options: children[0] instanceof Array ? children[0] : children,
-  }),
-  subcommand: (
-    props: JSX.IntrinsicElements["subcommand"],
-    children: DiscordNode[]
-  ) => ({
-    ...props,
-    type: 1,
-    options: children[0] instanceof Array ? children[0] : children,
-  }),
-  subcommandgroup: (
-    props: JSX.IntrinsicElements["subcommandgroup"],
-    children: DiscordNode[]
-  ) => ({
-    ...props,
-    type: 2,
-    options: children[0] instanceof Array ? children[0] : children,
-  }),
-  string: (
-    props: JSX.IntrinsicElements["string"],
-    children: DiscordNode[]
-  ) => ({
-    required: false,
-    ...props,
-    type: 3,
-    choices: children[0] instanceof Array ? children[0] : children,
-  }),
-  integer: (props: JSX.IntrinsicElements["integer"]) => ({
-    required: false,
-    ...props,
-    type: 4,
-  }),
-  boolean: (props: JSX.IntrinsicElements["boolean"]) => ({
-    required: false,
-    ...props,
-    type: 5,
-  }),
-  user: (props: JSX.IntrinsicElements["user"]) => ({
-    required: false,
-    ...props,
-    type: 6,
-  }),
-  channel: (props: JSX.IntrinsicElements["channel"]) => ({
-    required: false,
-    ...props,
-    type: 7,
-  }),
-  role: (props: JSX.IntrinsicElements["role"]) => ({
-    required: false,
-    ...props,
-    type: 8,
-  }),
-  mentionable: (props: JSX.IntrinsicElements["mentionable"]) => ({
-    required: false,
-    ...props,
-    type: 9,
-  }),
-  number: (props: JSX.IntrinsicElements["number"]) => ({ ...props, type: 10 }),
-  attachment: (props: JSX.IntrinsicElements["attachment"]) => ({
-    required: false,
-    ...props,
-    type: 11,
-  }),
-  choice: (props: JSX.IntrinsicElements["choice"]) => props,
 };
 function createElement(
   tag: keyof JSX.IntrinsicElements | Function,
@@ -264,10 +166,6 @@ class Client extends Discord.Client {
         return interactionHandlers.get(interaction.customId)?.(interaction);
       if (interaction.isSelectMenu())
         return interactionHandlers.get(interaction.customId)?.(interaction);
-      /*if (interaction.())
-        interactionHandlers.get(interaction.customId)?.(interaction);*/
-      if (interaction.isChatInputCommand())
-        return interactionHandlers.get(interaction.commandName)?.(interaction);
 
       // modal submit (temp)
       // @ts-ignore
@@ -275,33 +173,6 @@ class Client extends Discord.Client {
         // @ts-ignore
         interactionHandlers.get(interaction.customId)(interaction);
     });
-  }
-  async initializeSlashCommand(commands: JSX.IntrinsicElements["command"][]) {
-    const cmds = [];
-    for (let command of commands) {
-      const res: any = await this.rest.post(
-        `/applications/${this.application?.id}/commands`,
-        { body: command }
-      );
-      if (command.onSubmit)
-        interactionHandlers.set(command.name, command.onSubmit);
-      cmds.push({ id: res.id, name: res.name });
-    }
-    return cmds;
-  }
-  async deleteSlashCommand(commands: { name: string }[]) {
-    const cmds = [];
-    for (let command of commands) {
-      const res: any = await this.rest.post(
-        `/applications/${this.application?.id}/commands`,
-        { body: { name: command.name, description: "." } }
-      );
-      await this.rest.delete(
-        `/applications/${this.application?.id}/commands/${res.id}`
-      );
-      cmds.push({ id: res.id, name: res.name });
-    }
-    return cmds;
   }
 }
 

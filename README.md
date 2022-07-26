@@ -55,7 +55,7 @@ message.channel.send({
       <embed
         title="title"
         color="Orange"
-        footer={<footer>footer text</footer>} // string also works like 'footer="footer text"'
+        footer="footer text" // or footer={<footer {...}>...</footer>}
       >
         <field name="field 1">field text</field>
         <field name="field 2">
@@ -294,6 +294,43 @@ await client.deleteSlashCommand([
     name: "command2",
   },
 ]);
+```
+
+## [Experimental] Custom Class Component
+
+```tsx
+import {
+  createElement,
+  Fragment,
+  DiscordNode,
+  DiscordComponent,
+} from "discord-tsx-factory";
+
+interface Props {
+  customProp1: string;
+  customProp2?: number;
+  children?: DiscordNode[];
+}
+class CustomEmbed extends DiscordComponent<Props> {
+  tag = "embed"; // You must specify tag name.
+  constructor(props: Props, children: DiscordNode[]) {
+    super(props, children); // You must call super with props and children.
+
+    this.children.push(
+      <field name={this.props.customProp1}>{this.props.customProp2}</field>
+    );
+  }
+}
+
+message.channel.send({
+  embeds: (
+    <>
+      <CustomEmbed customProp1="custom prop1" customProp2={123}>
+        <field name="field 1">field 1</field>
+      </CustomEmbed>
+    </>
+  ),
+});
 ```
 
 # Special Thanks

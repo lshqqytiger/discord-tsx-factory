@@ -8,14 +8,36 @@ interface CommandOption {
   required?: boolean;
 }
 
+export type DiscordFragment = Iterable<DiscordNode>;
+export type DiscordNode =
+  | DiscordElement
+  | DiscordPortal
+  | string
+  | number
+  | DiscordFragment;
+export interface DiscordElement<P = any> {
+  props: P;
+}
+export interface DiscordPortal extends DiscordElement {
+  children: DiscordNode;
+}
+export class DiscordComponent<P = {}> {
+  props: P;
+  children: DiscordNode[];
+  constructor(props: P, children: DiscordNode[]) {
+    this.props = props;
+    this.children = children;
+  }
+}
+
 declare global {
   namespace JSX {
-    type Element = any; // 임시
+    type Element = any;
     interface IntrinsicElements {
       br: {};
       embed: Omit<Discord.EmbedData, "color" | "footer"> & {
         color?: Discord.ColorResolvable;
-        footer?: JSX.IntrinsicElements["footer"];
+        footer?: IntrinsicElements["footer"];
       };
       footer: PartialOf<Discord.EmbedFooterData, "text"> | string;
       field: PartialOf<Discord.EmbedField, "value" | "inline">;
@@ -69,13 +91,13 @@ declare global {
 const interactionHandlers = new Map<string, Function>();
 const ElementBuilder = {
   br: () => "\n",
-  embed: (props: JSX.IntrinsicElements["embed"], children: JSX.Element[]) => {
+  embed: (props: JSX.IntrinsicElements["embed"], children: DiscordNode[]) => {
     props.fields = [];
     if (!props.description) {
       props.description = "";
       children.forEach((v) => {
         if (v instanceof Array) props.fields?.push(...v);
-        else if (typeof v == "object") props.fields?.push(v);
+        else if (typeof v == "object" && "name" in v) props.fields?.push(v);
         else props.description += String(v);
       });
     }
@@ -88,22 +110,22 @@ const ElementBuilder = {
     typeof props === "string"
       ? { text: props }
       : { ...props, text: props.text || children.join("") },
-  field: (props: JSX.IntrinsicElements["field"], children: JSX.Element[]) => ({
+  field: (props: JSX.IntrinsicElements["field"], children: DiscordNode[]) => ({
     name: props.name,
-    value: props.value || children.join(""),
+    value: props.value || children.flat(10).join(""),
     inline: props.inline || false,
   }),
   emoji: (props: JSX.IntrinsicElements["emoji"]) => props.emoji,
-  row: (props: JSX.IntrinsicElements["row"], children: JSX.Element[]) =>
+  row: (props: JSX.IntrinsicElements["row"], children: DiscordNode[]) =>
     new Discord.ActionRowBuilder({
       ...props,
       components: children[0] instanceof Array ? children[0] : children,
     }),
-  button: (props: JSX.IntrinsicElements["button"], children: JSX.Element[]) => {
+  button: (props: JSX.IntrinsicElements["button"], children: DiscordNode[]) => {
     const button = new Discord.ButtonBuilder({
       ...props,
       style: props.style || Discord.ButtonStyle.Primary,
-      label: props.label || children.join(""),
+      label: props.label || children.flat(10).join(""),
     } as Partial<Discord.InteractionButtonComponentData>);
     if (props.onClick && props.customId)
       interactionHandlers.set(props.customId, props.onClick);
@@ -112,22 +134,23 @@ const ElementBuilder = {
   },
   linkbutton: (
     props: JSX.IntrinsicElements["linkbutton"],
-    children: JSX.Element[]
+    children: DiscordNode[]
   ) =>
     new Discord.ButtonBuilder({
       ...props,
       style: Discord.ButtonStyle.Link,
-      label: props.label || children.join(""),
+      label: props.label || children.flat(10).join(""),
     }),
-  select: (props: JSX.IntrinsicElements["select"], children: JSX.Element[]) => {
+  select: (props: JSX.IntrinsicElements["select"], children: DiscordNode[]) => {
     const select = new Discord.SelectMenuBuilder(props);
     select.addOptions(children[0] instanceof Array ? children[0] : children);
     if (props.onChange && props.customId)
       interactionHandlers.set(props.customId, props.onChange);
     return select;
   },
-  option: (props: JSX.IntrinsicElements["option"]) => props,
-  modal: (props: JSX.IntrinsicElements["modal"], children: JSX.Element[]) => {
+  option: (props: JSX.IntrinsicElements["option"]) =>
+    new Discord.SelectMenuOptionBuilder(props),
+  modal: (props: JSX.IntrinsicElements["modal"], children: DiscordNode[]) => {
     if (props.onSubmit) interactionHandlers.set(props.customId, props.onSubmit);
     return new Discord.ModalBuilder({
       type: (props.type as any) || 1,
@@ -139,14 +162,14 @@ const ElementBuilder = {
     new Discord.TextInputBuilder({ ...props, type: 4 }),
   command: (
     props: JSX.IntrinsicElements["command"],
-    children: JSX.Element[]
+    children: DiscordNode[]
   ) => ({
     ...props,
     options: children[0] instanceof Array ? children[0] : children,
   }),
   subcommand: (
     props: JSX.IntrinsicElements["subcommand"],
-    children: JSX.Element[]
+    children: DiscordNode[]
   ) => ({
     ...props,
     type: 1,
@@ -154,7 +177,7 @@ const ElementBuilder = {
   }),
   subcommandgroup: (
     props: JSX.IntrinsicElements["subcommandgroup"],
-    children: JSX.Element[]
+    children: DiscordNode[]
   ) => ({
     ...props,
     type: 2,
@@ -162,7 +185,7 @@ const ElementBuilder = {
   }),
   string: (
     props: JSX.IntrinsicElements["string"],
-    children: JSX.Element[]
+    children: DiscordNode[]
   ) => ({
     required: false,
     ...props,
@@ -207,15 +230,30 @@ const ElementBuilder = {
   }),
   choice: (props: JSX.IntrinsicElements["choice"]) => props,
 };
-const createElement = (
+function createElement(
   tag: keyof JSX.IntrinsicElements | Function,
   props: any,
-  ...children: JSX.Element[]
-) => {
-  if (typeof tag == "function") return tag(props, children);
+  ...children: DiscordNode[]
+): typeof ElementBuilder[keyof JSX.IntrinsicElements] extends (
+  ...args: never[]
+) => infer R
+  ? R
+  : never {
+  if (typeof tag == "function") {
+    if (/^\s*class\s+/.test(tag.toString())) {
+      const element: {
+        tag: keyof JSX.IntrinsicElements;
+        props: any;
+        children: DiscordNode[];
+      } = Reflect.construct(tag, [props || {}, children]);
+      return ElementBuilder[element.tag](element.props, element.children);
+    }
+    return tag(props, children);
+  }
   return ElementBuilder[tag](props || {}, children);
-};
-const Fragment = (props: null, children: JSX.Element[]) => children;
+}
+const Fragment = (props: null, children: DiscordNode[]): DiscordFragment =>
+  children;
 const deleteHandler = (key: string) => interactionHandlers.delete(key);
 
 class Client extends Discord.Client {

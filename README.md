@@ -216,12 +216,12 @@ message.channel.send({
 ## MessageOptions
 
 ```tsx
-message.channel.send(<message content="content"></message>);
+message.channel.send(<message content="content" />);
 ```
 
 ## [Experimental] Custom Class Component
 
-You can define your own component using class which extends DiscordComponent<P>.
+You can define your own component using class which extends DiscordComponent.
 
 Custom Class Component must have `render` method.
 

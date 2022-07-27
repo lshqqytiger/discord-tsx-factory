@@ -17,10 +17,11 @@ export interface DiscordPortal extends DiscordElement {
 }
 export class DiscordComponent<P = {}> {
   props: P;
-  children: DiscordNode[];
-  constructor(props: P, children: DiscordNode[]) {
+  constructor(props: P) {
     this.props = props;
-    this.children = children;
+  }
+  render(): DiscordNode {
+    throw new Error("Your component doesn't have 'render' method.");
   }
 }
 
@@ -28,6 +29,7 @@ declare global {
   namespace JSX {
     type Element = any;
     interface IntrinsicElements {
+      message: Discord.MessageOptions;
       br: {};
       embed: Omit<Discord.EmbedData, "color" | "footer"> & {
         color?: Discord.ColorResolvable;
@@ -61,6 +63,7 @@ declare global {
 
 const interactionHandlers = new Map<string, Function>();
 const ElementBuilder = {
+  message: (props: JSX.IntrinsicElements["message"]) => props,
   br: () => "\n",
   embed: (props: JSX.IntrinsicElements["embed"], children: DiscordNode[]) => {
     props.fields = [];
@@ -132,7 +135,7 @@ const ElementBuilder = {
   input: (props: JSX.IntrinsicElements["input"]) =>
     new Discord.TextInputBuilder({ ...props, type: 4 }),
 };
-function createElement(
+export function createElement(
   tag: keyof JSX.IntrinsicElements | Function,
   props: any,
   ...children: DiscordNode[]
@@ -142,23 +145,19 @@ function createElement(
   ? R
   : never {
   if (typeof tag == "function") {
-    if (/^\s*class\s+/.test(tag.toString())) {
-      const element: {
-        tag: keyof JSX.IntrinsicElements;
-        props: any;
-        children: DiscordNode[];
-      } = Reflect.construct(tag, [props || {}, children]);
-      return ElementBuilder[element.tag](element.props, element.children);
-    }
+    if (/^\s*class\s+/.test(tag.toString()))
+      return Reflect.construct(tag, [{ ...props, children }]).render();
     return tag(props, children);
   }
   return ElementBuilder[tag](props || {}, children);
 }
-const Fragment = (props: null, children: DiscordNode[]): DiscordFragment =>
-  children;
-const deleteHandler = (key: string) => interactionHandlers.delete(key);
+export const Fragment = (
+  props: null,
+  children: DiscordNode[]
+): DiscordFragment => children;
+export const deleteHandler = (key: string) => interactionHandlers.delete(key);
 
-class Client extends Discord.Client {
+export class Client extends Discord.Client {
   constructor(options: Discord.ClientOptions) {
     super(options);
     this.on("interactionCreate", (interaction: Discord.Interaction) => {
@@ -175,5 +174,3 @@ class Client extends Discord.Client {
     });
   }
 }
-
-export { createElement, Fragment, Client, deleteHandler };

@@ -213,7 +213,17 @@ message.channel.send({
 });
 ```
 
+## MessageOptions
+
+```tsx
+message.channel.send(<message content="content"></message>);
+```
+
 ## [Experimental] Custom Class Component
+
+You can define your own component using class which extends DiscordComponent<P>.
+
+Custom Class Component must have `render` method.
 
 ```tsx
 import {
@@ -225,30 +235,45 @@ import {
 
 interface Props {
   customProp1: string;
-  customProp2?: number;
-  children?: DiscordNode[];
+  customProp2: string;
+  children?: DiscordNode;
 }
 class CustomEmbed extends DiscordComponent<Props> {
-  tag = "embed"; // You must specify tag name.
-  constructor(props: Props, children: DiscordNode[]) {
-    super(props, children); // You must call super with props and children.
+  constructor(props: Props) {
+    super(props);
 
-    this.children.push(
-      <field name={this.props.customProp1}>{this.props.customProp2}</field>
+    // Since discord-tsx-factory is not React, you can do anything with this.props.
+    this.props.customProp1 = "field name 1";
+  }
+  render() {
+    return (
+      <embed title="test embed">
+        <field name={this.props.customProp1}>
+          {this.props.children} Test 1
+        </field>
+        <field name={this.props.customProp2}>
+          {this.props.children} Test 2
+        </field>
+      </embed>
     );
   }
 }
-
 message.channel.send({
   embeds: (
     <>
-      <CustomEmbed customProp1="custom prop1" customProp2={123}>
-        <field name="field 1">field 1</field>
+      <CustomEmbed customProp1="custom prop1" customProp2="custom prop2">
+        Custom Component
       </CustomEmbed>
     </>
   ),
 });
 ```
+
+## Command
+
+I recently thought it was unnecessary and removed it from 0.2.0.
+
+To register Command, use other cool modules or methods together.
 
 # Special Thanks
 

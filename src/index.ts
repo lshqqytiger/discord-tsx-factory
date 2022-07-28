@@ -145,8 +145,9 @@ export function createElement(
   ? R
   : never {
   if (typeof tag == "function") {
+    props = { ...props, children }; // 'props' is possibly null.
     if (/^\s*class\s+/.test(tag.toString()))
-      return Reflect.construct(tag, [{ ...props, children }]).render();
+      return Reflect.construct(tag, [props]).render();
     return tag(props, children);
   }
   return ElementBuilder[tag](props || {}, children);

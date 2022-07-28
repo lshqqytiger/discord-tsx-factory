@@ -219,11 +219,13 @@ message.channel.send({
 message.channel.send(<message content="content" />);
 ```
 
-## [Experimental] Custom Class Component
+## [Experimental] Custom Components
+
+### Using class
 
 You can define your own component using class which extends DiscordComponent.
 
-Custom Class Component must have `render` method.
+Custom Class Component must have `render` method which returns DiscordNode.
 
 ```tsx
 import {
@@ -245,7 +247,7 @@ class CustomEmbed extends DiscordComponent<Props> {
     // Since discord-tsx-factory is not React, you can do anything with this.props.
     this.props.customProp1 = "field name 1";
   }
-  render() {
+  render(): DiscordNode {
     return (
       <embed title="test embed">
         <field name={this.props.customProp1}>
@@ -259,6 +261,48 @@ class CustomEmbed extends DiscordComponent<Props> {
   }
 }
 message.channel.send({
+  embeds: (
+    <>
+      <CustomEmbed customProp1="custom prop1" customProp2="custom prop2">
+        Custom Component
+      </CustomEmbed>
+    </>
+  ),
+});
+```
+
+### Using function
+
+You can define your own component using function which returns DiscordNode.
+
+```tsx
+import {
+  createElement,
+  Fragment,
+  DiscordNode,
+  DiscordComponent,
+} from "discord-tsx-factory";
+
+interface Props {
+  customProp1: string;
+  customProp2: string;
+  children?: DiscordNode;
+}
+function CustomEmbed({
+  customProp1,
+  customProp2,
+  children,
+}: Props): DiscordNode {
+  customProp1 = "field name 1";
+
+  return (
+    <embed title="test embed">
+      <field name={customProp1}>{children} Test 1</field>
+      <field name={customProp2}>{children} Test 2</field>
+    </embed>
+  );
+}
+await channel.send({
   embeds: (
     <>
       <CustomEmbed customProp1="custom prop1" customProp2="custom prop2">

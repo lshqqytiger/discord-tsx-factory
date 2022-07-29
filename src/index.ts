@@ -25,6 +25,16 @@ export class DiscordComponent<P = {}> {
   }
 }
 
+export type ButtonInteractionHandler = (
+  interaction: Discord.ButtonInteraction
+) => any;
+export type SelectMenuInteractionHandler = (
+  interaction: Discord.SelectMenuInteraction
+) => any;
+export type ModalSubmitInteractionHandler = (
+  interaction: Discord.ModalSubmitInteraction
+) => any;
+
 declare global {
   namespace JSX {
     type Element = any;
@@ -41,11 +51,11 @@ declare global {
       row: Partial<Discord.ActionRowComponentData>;
       button: Partial<Discord.ButtonComponent> & {
         emoji?: Discord.Emoji | string;
-        onClick?: (interaction: Discord.ButtonInteraction) => void;
+        onClick?: ButtonInteractionHandler;
       };
       linkbutton: Omit<Discord.LinkButtonComponentData, "style" | "type">;
       select: Partial<Discord.SelectMenuComponentData> & {
-        onChange?: (interaction: Discord.SelectMenuInteraction) => void;
+        onChange?: SelectMenuInteractionHandler;
       };
       option: Discord.SelectMenuComponentOptionData;
       modal: Omit<Discord.ModalData, "type" | "components"> & {
@@ -54,7 +64,7 @@ declare global {
           | Discord.ComponentType.TextInput;
         customId: string;
         title: string;
-        onSubmit?: (interaction: Discord.ModalSubmitInteraction) => void;
+        onSubmit?: ModalSubmitInteractionHandler;
       };
       input: Omit<Discord.TextInputComponentData, "type">;
     }
@@ -166,12 +176,8 @@ export class Client extends Discord.Client {
         return interactionHandlers.get(interaction.customId)?.(interaction);
       if (interaction.isSelectMenu())
         return interactionHandlers.get(interaction.customId)?.(interaction);
-
-      // modal submit (temp)
-      // @ts-ignore
-      if (interaction.customId && interactionHandlers.get(interaction.customId))
-        // @ts-ignore
-        interactionHandlers.get(interaction.customId)(interaction);
+      if (interaction instanceof Discord.ModalSubmitInteraction)
+        interactionHandlers.get(interaction.customId)?.(interaction);
     });
   }
 }

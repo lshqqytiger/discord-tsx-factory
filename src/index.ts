@@ -53,10 +53,12 @@ export class DiscordStateComponent<
     this.message?.edit(this.render());
   }
 }
-export async function useState<T extends DiscordStateComponent>(
+export async function useState<T extends DiscordStateComponent, S = unknown>(
   this: Discord.BaseChannel | Discord.BaseInteraction,
-  component: T
-): Promise<StateTuple<unknown>> {
+  component: T,
+  state?: S
+): Promise<StateTuple<S>> {
+  if (state) component.state = state;
   if (this instanceof Discord.BaseChannel && this.isTextBased())
     return [
       (component.message = await this.send(component.render())),

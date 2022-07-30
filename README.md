@@ -313,7 +313,7 @@ await channel.send({
 
 I think state is one of the most powerful features of React.
 
-With discord-tsx-factory, all classes that extend `BaseChannel` and `BaseInteraction` have `useState` method.
+With discord-tsx-factory, all classes that extend `BaseChannel` or `BaseInteraction` have `useState` method.
 
 ```tsx
 import {
@@ -370,7 +370,7 @@ class CustomMessage extends DiscordStateComponent<Props, State> {
 }
 // 'useState' returns [Discord.Message, (state: S) => void].
 const [message, setState] = await channel.useState(
-  <CustomMessage contents={["page0", "page1"]} />
+  <CustomMessage contents={["page0", "page1"]} />, { page: 0 } // Initial state is optional.
 );
 ```
 

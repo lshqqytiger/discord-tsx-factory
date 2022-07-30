@@ -313,7 +313,7 @@ await channel.send({
 
 I think state is one of the most powerful features of React.
 
-With discord-tsx-factory, `TextChannel`, `DMCchannel`, and `NewsChannel` have `useState` method.
+With discord-tsx-factory, `TextChannel`, `DMChannel`, and `NewsChannel` have `useState` method.
 
 ```tsx
 import {
@@ -370,7 +370,7 @@ channel.useState(<CustomMessage contents={["page0", "page1"]} />);
 
 ## Command
 
-I recently thought it was unnecessary and removed it from 0.2.0.
+I recently thought it was useless and removed it from 0.2.0.
 
 To register Command, use other cool modules or methods together.
 

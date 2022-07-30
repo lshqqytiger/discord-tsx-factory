@@ -219,9 +219,9 @@ message.channel.send(<message content="content" />);
 
 ### Using class
 
-You can define your own component using class which extends DiscordComponent.
+You can define your own component using class which extends `DiscordComponent`.
 
-Custom Class Component must have `render` method which returns DiscordNode.
+Custom Class Component must have `render` method which returns `DiscordNode`.
 
 ```tsx
 import {
@@ -269,7 +269,7 @@ message.channel.send({
 
 ### Using function
 
-You can define your own component using function which returns DiscordNode.
+You can define your own component using function which returns `DiscordNode`.
 
 ```tsx
 import {
@@ -313,7 +313,7 @@ await channel.send({
 
 I think state is one of the most powerful features of React.
 
-With discord-tsx-factory, `TextChannel`, `DMChannel`, and `NewsChannel` have `useState` method.
+With discord-tsx-factory, all classes that extend `BaseChannel` and `BaseInteraction` have `useState` method.
 
 ```tsx
 import {
@@ -329,7 +329,7 @@ interface State {
   page: number;
 }
 class CustomMessage extends DiscordStateComponent<Props, State> {
-  state: State = { page: 0 };
+  state: State = { page: 0 }; // Initial state
   render() {
     return (
       <message
@@ -352,9 +352,12 @@ class CustomMessage extends DiscordStateComponent<Props, State> {
               </button>
               <button
                 customId="button_next"
-                onClick={(interaction) =>
+                onClick={async (interaction) => {
                   this.setState({ page: this.state.page + 1 }, interaction)
-                }
+
+                  // interactions also have 'useState'.
+                  const [...] = await interaction.useState(...);
+                }}
               >
                 next
               </button>

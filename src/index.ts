@@ -54,18 +54,20 @@ export class DiscordStateComponent<
   }
 }
 export async function useState<T extends DiscordStateComponent>(
-  this:
-    | Discord.DMChannel
-    | Discord.PartialDMChannel
-    | Discord.NewsChannel
-    | Discord.TextChannel
-    | Discord.AnyThreadChannel,
+  this: Discord.TextBasedChannel | Discord.Interaction,
   component: T
 ): Promise<StateTuple<unknown>> {
-  return [
-    (component.message = await this.send(component.render())),
-    component.setState,
-  ];
+  if (this instanceof Discord.BaseChannel)
+    return [
+      (component.message = await this.send(component.render())),
+      component.setState,
+    ];
+  else if (this instanceof Discord.BaseInteraction && this.isRepliable())
+    return [
+      (component.message = await this.reply(component.render())),
+      component.setState,
+    ];
+  throw new Error("Invalid this.");
 }
 
 export type ButtonInteractionHandler = (
@@ -114,20 +116,11 @@ declare global {
   }
 }
 declare module "discord.js" {
-  interface DMChannel {
-    useState<T extends DiscordStateComponent>(
-      component: T
-    ): Promise<StateTuple<unknown>>;
+  interface BaseChannel {
+    useState: typeof useState;
   }
-  interface NewsChannel {
-    useState<T extends DiscordStateComponent>(
-      component: T
-    ): Promise<StateTuple<unknown>>;
-  }
-  interface TextChannel {
-    useState<T extends DiscordStateComponent>(
-      component: T
-    ): Promise<StateTuple<unknown>>;
+  interface BaseInteraction {
+    useState: typeof useState;
   }
 }
 
@@ -235,6 +228,7 @@ export const deleteHandler = (key: string) => interactionHandlers.delete(key);
 export class Client extends Discord.Client {
   constructor(options: Discord.ClientOptions) {
     super(options);
+
     this.on("interactionCreate", (interaction: Discord.Interaction) => {
       if (interaction.isButton())
         return interactionHandlers.get(interaction.customId)?.(interaction);
@@ -246,6 +240,5 @@ export class Client extends Discord.Client {
   }
 }
 
-Discord.DMChannel.prototype.useState = useState;
-Discord.NewsChannel.prototype.useState = useState;
-Discord.TextChannel.prototype.useState = useState;
+Discord.BaseChannel.prototype.useState = useState;
+Discord.BaseInteraction.prototype.useState = useState;

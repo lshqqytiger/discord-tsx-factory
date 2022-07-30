@@ -1,6 +1,11 @@
 import * as Discord from "discord.js";
 
 type PartialOf<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
+type StateSetter<S> = (
+  state: S,
+  interaction?: Discord.ButtonInteraction | Discord.SelectMenuInteraction
+) => void;
+type StateTuple<S> = [Discord.Message, StateSetter<S>];
 
 export type DiscordFragment = Iterable<DiscordNode>;
 export type DiscordNode =
@@ -9,13 +14,13 @@ export type DiscordNode =
   | string
   | number
   | DiscordFragment;
-export interface DiscordElement<P = any> {
+export interface DiscordElement<P = unknown> {
   props: P;
 }
 export interface DiscordPortal extends DiscordElement {
   children: DiscordNode;
 }
-export class DiscordComponent<P = {}> {
+export class DiscordComponent<P = unknown> {
   props: P;
   constructor(props: P) {
     this.props = props;
@@ -23,6 +28,44 @@ export class DiscordComponent<P = {}> {
   render(): DiscordNode {
     throw new Error("Your component doesn't have 'render' method.");
   }
+}
+export class DiscordStateComponent<
+  P = unknown,
+  S = unknown
+> extends DiscordComponent<P> {
+  props!: P;
+  state: S;
+  message?: Discord.Message;
+  constructor(props: P) {
+    super(props);
+
+    this.state = {} as S;
+  }
+  render(): any {
+    throw new Error("Your component doesn't have 'render' method.");
+  }
+  setState: StateSetter<S> = (state, interaction) => {
+    this.state = { ...this.state, ...state };
+    if (interaction) interaction.update(this.render());
+    else this.message?.edit(this.render());
+  };
+  forceUpdate() {
+    this.message?.edit(this.render());
+  }
+}
+export async function useState<T extends DiscordStateComponent>(
+  this:
+    | Discord.DMChannel
+    | Discord.PartialDMChannel
+    | Discord.NewsChannel
+    | Discord.TextChannel
+    | Discord.AnyThreadChannel,
+  component: T
+): Promise<StateTuple<unknown>> {
+  return [
+    (component.message = await this.send(component.render())),
+    component.setState,
+  ];
 }
 
 export type ButtonInteractionHandler = (
@@ -68,6 +111,23 @@ declare global {
       };
       input: Omit<Discord.TextInputComponentData, "type">;
     }
+  }
+}
+declare module "discord.js" {
+  interface DMChannel {
+    useState<T extends DiscordStateComponent>(
+      component: T
+    ): Promise<StateTuple<unknown>>;
+  }
+  interface NewsChannel {
+    useState<T extends DiscordStateComponent>(
+      component: T
+    ): Promise<StateTuple<unknown>>;
+  }
+  interface TextChannel {
+    useState<T extends DiscordStateComponent>(
+      component: T
+    ): Promise<StateTuple<unknown>>;
   }
 }
 
@@ -138,9 +198,10 @@ const ElementBuilder = {
     if (props.onSubmit) interactionHandlers.set(props.customId, props.onSubmit);
     return new Discord.ModalBuilder({
       type: (props.type as any) || 1,
-      custom_id: props.customId,
+      customId: props.customId,
+      title: props.title,
       components: children[0] instanceof Array ? children[0] : children,
-    }).setTitle(props.title);
+    });
   },
   input: (props: JSX.IntrinsicElements["input"]) =>
     new Discord.TextInputBuilder({ ...props, type: 4 }),
@@ -156,8 +217,11 @@ export function createElement(
   : never {
   if (typeof tag == "function") {
     props = { ...props, children }; // 'props' is possibly null.
-    if (/^\s*class\s+/.test(tag.toString()))
-      return Reflect.construct(tag, [props]).render();
+    if (/^\s*class\s+/.test(tag.toString())) {
+      const constructed = Reflect.construct(tag, [props]);
+      if (constructed.setState) return constructed;
+      return constructed.render();
+    }
     return tag(props, children);
   }
   return ElementBuilder[tag](props || {}, children);
@@ -181,3 +245,7 @@ export class Client extends Discord.Client {
     });
   }
 }
+
+Discord.DMChannel.prototype.useState = useState;
+Discord.NewsChannel.prototype.useState = useState;
+Discord.TextChannel.prototype.useState = useState;

@@ -8,11 +8,7 @@ import * as Discord from "discord.js";
 
 const client = new Client({ intents: [...] });
 
-client.on("ready", () => {
-  console.log("ready");
-});
-
-client.login("your token");
+// ...
 ```
 
 # Installation
@@ -20,13 +16,13 @@ client.login("your token");
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.0.3 discord-tsx-factory
+$ npm install --save discord.js@14.1.1 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.0.3 discord-tsx-factory
+$ yarn add discord.js@14.1.1 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:
@@ -213,13 +209,13 @@ message.channel.send({
 });
 ```
 
-## MessageOptions
+## Message
 
 ```tsx
 message.channel.send(<message content="content" />);
 ```
 
-## [Experimental] Custom Components
+## Custom Components
 
 ### Using class
 
@@ -311,6 +307,65 @@ await channel.send({
     </>
   ),
 });
+```
+
+## [Experimental] State
+
+I think state is one of the most powerful features of React.
+
+With discord-tsx-factory, `TextChannel`, `DMCchannel`, and `NewsChannel` have `useState` method.
+
+```tsx
+import {
+  createElement,
+  Fragment,
+  DiscordStateComponent,
+} from "discord-tsx-factory";
+
+interface Props {
+  contents: string[];
+}
+interface State {
+  page: number;
+}
+class CustomMessage extends DiscordStateComponent<Props, State> {
+  state: State = { page: 0 };
+  render() {
+    return (
+      <message
+        embeds={
+          <>
+            <embed>{this.props.contents[this.state.page]}</embed>
+          </>
+        }
+        components={
+          <>
+            <row>
+              <button
+                customId="button_prev"
+                onClick={(interaction) =>
+                  // interaction is not essential, but it will 'update' message with interaction.
+                  this.setState({ page: this.state.page - 1 }, interaction)
+                }
+              >
+                prev
+              </button>
+              <button
+                customId="button_next"
+                onClick={(interaction) =>
+                  this.setState({ page: this.state.page + 1 }, interaction)
+                }
+              >
+                next
+              </button>
+            </row>
+          </>
+        }
+      />
+    );
+  }
+}
+channel.useState(<CustomMessage contents={["page0", "page1"]} />);
 ```
 
 ## Command

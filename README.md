@@ -365,7 +365,10 @@ class CustomMessage extends DiscordStateComponent<Props, State> {
     );
   }
 }
-channel.useState(<CustomMessage contents={["page0", "page1"]} />);
+// 'useState' returns [Discord.Message, (state: S) => void].
+const [message, setState] = await channel.useState(
+  <CustomMessage contents={["page0", "page1"]} />
+);
 ```
 
 ## Command

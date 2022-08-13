@@ -53,7 +53,7 @@ export class DiscordStateComponent<
     this.message?.edit(this.render());
   }
 }
-export async function useState<T extends DiscordStateComponent, S = unknown>(
+async function _useState<T extends DiscordStateComponent, S = unknown>(
   this: Discord.BaseChannel | Discord.BaseInteraction,
   component: T,
   state?: S
@@ -69,7 +69,14 @@ export async function useState<T extends DiscordStateComponent, S = unknown>(
       (component.message = await this.reply(component.render())),
       component.setState,
     ];
-  throw new Error("Invalid this.");
+  throw new Error("Invalid this or target. (Interaction or Channel)");
+}
+export async function useState<T extends DiscordStateComponent, S = unknown>(
+  target: Discord.BaseChannel | Discord.BaseInteraction,
+  component: T,
+  state?: S
+): Promise<StateTuple<S>> {
+  return _useState.bind(target)(component, state);
 }
 
 export type ButtonInteractionHandler = (
@@ -119,10 +126,10 @@ declare global {
 }
 declare module "discord.js" {
   interface BaseChannel {
-    useState: typeof useState;
+    useState: typeof _useState;
   }
   interface BaseInteraction {
-    useState: typeof useState;
+    useState: typeof _useState;
   }
 }
 
@@ -242,5 +249,5 @@ export class Client extends Discord.Client {
   }
 }
 
-Discord.BaseChannel.prototype.useState = useState;
-Discord.BaseInteraction.prototype.useState = useState;
+Discord.BaseChannel.prototype.useState = _useState;
+Discord.BaseInteraction.prototype.useState = _useState;

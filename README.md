@@ -2,6 +2,8 @@
 
 Write Discord.js component in tsx.
 
+`discord-tsx-factory` is compatible with `discord.js` version `14.0.4 - 14.2.0`. (See `peerDependencies`)
+
 ```tsx
 import { createElement, Fragment, Client } from "discord-tsx-factory";
 import * as Discord from "discord.js";
@@ -16,13 +18,13 @@ const client = new Client({ intents: [...] });
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.1.1 discord-tsx-factory
+$ npm install --save discord.js@14.2.0 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.1.1 discord-tsx-factory
+$ yarn add discord.js@14.2.0 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:
@@ -320,6 +322,7 @@ import {
   createElement,
   Fragment,
   DiscordStateComponent,
+  useState,
 } from "discord-tsx-factory";
 
 interface Props {
@@ -353,7 +356,7 @@ class CustomMessage extends DiscordStateComponent<Props, State> {
               <button
                 customId="button_next"
                 onClick={async (interaction) => {
-                  this.setState({ page: this.state.page + 1 }, interaction)
+                  this.setState({ page: this.state.page + 1 }, interaction);
 
                   // interactions also have 'useState'.
                   const [...] = await interaction.useState(...);
@@ -372,13 +375,19 @@ class CustomMessage extends DiscordStateComponent<Props, State> {
 const [message, setState] = await channel.useState(
   <CustomMessage contents={["page0", "page1"]} />, { page: 0 } // Initial state is optional.
 );
+// or
+const [message, setState] = await useState(
+  channel,
+  <CustomMessage contents={["page0", "page1"]} />,
+  { page: 0 }
+);
 ```
 
 ## Command
 
 I recently thought it was useless and removed it from 0.2.0.
 
-To register Command, use other cool modules or methods together.
+To register Command, use other cool modules or methods together. (e.g. `SlashCommandBuilder`)
 
 # Special Thanks
 

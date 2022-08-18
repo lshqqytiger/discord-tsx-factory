@@ -74,8 +74,8 @@ message.channel.send({
   embeds: (
     <>
       <embed title="title" color="Orange" description="description" />
-      <embed title="title" color="Orange" description="description">
-        It will be ignored.
+      <embed title="title" color="Orange">
+        description
       </embed>
     </>
   ),
@@ -87,6 +87,8 @@ message.channel.send({
 `onClick` is optional.
 
 You can handle button interaction using `client.on("interactionCreate", ...);`.
+
+`linkbutton` tag is deprecated! Use `button` with `url` property instead.
 
 ```tsx
 message.channel.send({
@@ -102,7 +104,9 @@ message.channel.send({
         >
           primary button
         </button>
-        <linkbutton url="https://github.com">link button</linkbutton>
+        <button url="https://github.com" /* `linkbutton` tag is deprecated. */>
+          link button
+        </button>
       </row>
     </>
   ),
@@ -123,12 +127,8 @@ message.channel.send({
           onClick={(event) => {
             event.reply("button1 clicked");
           }}
-        >
-          It will be ignored
-        </button>
-        <linkbutton label="link button" url="https://github.com">
-          It will be ignored
-        </linkbutton>
+        />
+        <button label="link button" url="https://github.com" />
       </row>
     </>
   ),
@@ -311,9 +311,7 @@ await channel.send({
 });
 ```
 
-## [Experimental] State
-
-I think state is one of the most powerful features of React.
+## State
 
 With discord-tsx-factory, all classes that extend `BaseChannel` or `BaseInteraction` have `useState` method.
 
@@ -347,7 +345,7 @@ class CustomMessage extends DiscordStateComponent<Props, State> {
               <button
                 customId="button_prev"
                 onClick={(interaction) =>
-                  // interaction is not essential, but it will 'update' message with interaction.
+                  // interaction is not essential, but it calls interaction.update instead of message.update.
                   this.setState({ page: this.state.page - 1 }, interaction)
                 }
               >
@@ -373,7 +371,7 @@ class CustomMessage extends DiscordStateComponent<Props, State> {
 }
 // 'useState' returns [Discord.Message, (state: S) => void].
 const [message, setState] = await channel.useState(
-  <CustomMessage contents={["page0", "page1"]} />, { page: 0 } // Initial state is optional.
+  <CustomMessage contents={["page0", "page1"]} />, { page: 0 } // Initial state is optional. It will ignore pre-defined state (in class).
 );
 // or
 const [message, setState] = await useState(

@@ -71,7 +71,7 @@ async function _useState<T extends DiscordStateComponent, S = unknown>(
     ];
   throw new Error("Invalid this or target. (Interaction or Channel)");
 }
-export async function useState<T extends DiscordStateComponent, S = unknown>(
+export function useState<T extends DiscordStateComponent, S = unknown>(
   target: Discord.BaseChannel | Discord.BaseInteraction,
   component: T,
   state?: S
@@ -95,7 +95,7 @@ declare global {
     interface IntrinsicElements {
       message: Discord.MessageOptions;
       br: {};
-      embed: Omit<Discord.EmbedData, "color" | "footer"> & {
+      embed: Omit<Discord.EmbedData, "color" | "footer" | "timestamp"> & {
         color?: Discord.ColorResolvable;
         footer?: IntrinsicElements["footer"];
       };
@@ -107,6 +107,9 @@ declare global {
         emoji?: Discord.Emoji | string;
         onClick?: ButtonInteractionHandler;
       };
+      /**
+       * @deprecated Use `button` with `url` instead.
+       */
       linkbutton: Omit<Discord.LinkButtonComponentData, "style" | "type">;
       select: Partial<Discord.SelectMenuComponentData> & {
         onChange?: SelectMenuInteractionHandler;
@@ -141,13 +144,14 @@ const ElementBuilder = {
     props.fields = [];
     if (!props.description) {
       props.description = "";
-      children.forEach((v) => {
-        if (v instanceof Array) props.fields?.push(...v);
-        else if (typeof v == "object" && "name" in v) props.fields?.push(v);
-        else props.description += String(v);
-      });
+      for (let child of children) {
+        if (child instanceof Array) props.fields.push(...child);
+        else if (typeof child === "object" && "name" in child)
+          props.fields.push(child);
+        else props.description += String(child);
+      }
     }
-    if (props.footer) props.footer = ElementBuilder.footer(props.footer, []);
+    props.footer &&= ElementBuilder.footer(props.footer, []);
     return new Discord.EmbedBuilder(props as Discord.EmbedData).setColor(
       props.color || null
     );
@@ -159,7 +163,7 @@ const ElementBuilder = {
   field: (props: JSX.IntrinsicElements["field"], children: DiscordNode[]) => ({
     name: props.name,
     value: props.value || children.flat(10).join(""),
-    inline: props.inline || false,
+    inline: props.inline,
   }),
   emoji: (props: JSX.IntrinsicElements["emoji"]) => props.emoji,
   row: (props: JSX.IntrinsicElements["row"], children: DiscordNode[]) =>
@@ -170,11 +174,16 @@ const ElementBuilder = {
   button: (props: JSX.IntrinsicElements["button"], children: DiscordNode[]) => {
     const button = new Discord.ButtonBuilder({
       ...props,
-      style: props.style || Discord.ButtonStyle.Primary,
+      style:
+        props.style ||
+        (props.url ? Discord.ButtonStyle.Link : Discord.ButtonStyle.Primary),
       label: props.label || children.flat(10).join(""),
     } as Partial<Discord.InteractionButtonComponentData>);
-    if (props.onClick && props.customId)
+    if (props.onClick && props.customId) {
+      if (props.url)
+        throw new Error("You can't use both customId/onClick and url.");
       interactionHandlers.set(props.customId, props.onClick);
+    }
     if (props.emoji) button.setEmoji(props.emoji);
     return button;
   },
@@ -199,7 +208,7 @@ const ElementBuilder = {
   modal: (props: JSX.IntrinsicElements["modal"], children: DiscordNode[]) => {
     if (props.onSubmit) interactionHandlers.set(props.customId, props.onSubmit);
     return new Discord.ModalBuilder({
-      type: (props.type as any) || 1,
+      type: props.type || 1,
       customId: props.customId,
       title: props.title,
       components: children[0] instanceof Array ? children[0] : children,

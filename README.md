@@ -345,7 +345,7 @@ class CustomMessage extends DiscordStateComponent<Props, State> {
               <button
                 customId="button_prev"
                 onClick={(interaction) =>
-                  // interaction is not essential, but it calls interaction.update instead of message.update.
+                  // interaction is not essential, but it calls interaction.update instead of message.edit.
                   this.setState({ page: this.state.page - 1 }, interaction)
                 }
               >

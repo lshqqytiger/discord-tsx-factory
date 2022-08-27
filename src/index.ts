@@ -228,7 +228,10 @@ export function createElement(
   : never {
   if (typeof tag == "function") {
     props = { ...props, children }; // 'props' is possibly null.
-    if (/^\s*class\s+/.test(tag.toString())) {
+    if (
+      tag.prototype && // filter arrow function
+      "render" in tag.prototype // renderable component
+    ) {
       const constructed = Reflect.construct(tag, [props]);
       if (constructed.setState) return constructed;
       return constructed.render();
@@ -244,19 +247,16 @@ export const Fragment = (
 export const deleteHandler = (key: string) => interactionHandlers.delete(key);
 
 export class Client extends Discord.Client {
+  defaultInteractionCreateListener = (interaction: Discord.Interaction) => {
+    if ("customId" in interaction)
+      interactionHandlers.get(interaction.customId)?.(interaction);
+  };
   constructor(options: Discord.ClientOptions) {
     super(options);
 
-    this.on("interactionCreate", (interaction: Discord.Interaction) => {
-      if (interaction.isButton())
-        return interactionHandlers.get(interaction.customId)?.(interaction);
-      if (interaction.isSelectMenu())
-        return interactionHandlers.get(interaction.customId)?.(interaction);
-      if (interaction instanceof Discord.ModalSubmitInteraction)
-        interactionHandlers.get(interaction.customId)?.(interaction);
-    });
+    this.on("interactionCreate", this.defaultInteractionCreateListener);
   }
 }
 
-Discord.BaseChannel.prototype.useState = _useState;
-Discord.BaseInteraction.prototype.useState = _useState;
+Discord.BaseChannel.prototype.useState =
+  Discord.BaseInteraction.prototype.useState = _useState;

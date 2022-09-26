@@ -2,13 +2,13 @@
 
 Write Discord.js component in tsx.
 
-`discord-tsx-factory` is compatible with `discord.js` version `14.0.4 - 14.3.0`. (See `peerDependencies`)
+`discord-tsx-factory` is compatible with `discord.js` version `14.4.0 - 14.5.0`. (See `peerDependencies`)
 
 ```tsx
 import { createElement, Fragment, Client } from "discord-tsx-factory";
 import * as Discord from "discord.js";
 
-const client = new Client({ intents: [...] });
+const client = new Client(...);
 
 // ...
 ```
@@ -18,13 +18,13 @@ const client = new Client({ intents: [...] });
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.4.0 discord-tsx-factory
+$ npm install --save discord.js@14.5.0 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.4.0 discord-tsx-factory
+$ yarn add discord.js@14.5.0 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:
@@ -40,6 +40,21 @@ You need to modify your tsconfig.json to use discord-tsx-factory:
   },
   ...
 }
+```
+
+# Default Interaction Handler
+
+You can use automatic interaction handler by defining client using Client class provided by `discord-tsx-factory`.
+
+If you want, you can turn off automatic interaction handler.
+
+```tsx
+import { Client } from "discord-tsx-factory";
+
+const client = new Client(...);
+
+client.off("interactionCreate", client.defaultInteractionCreateListener);
+client.on("interactionCreate", yourOwnHandler);
 ```
 
 # Example usage

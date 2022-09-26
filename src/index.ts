@@ -140,8 +140,8 @@ const ElementBuilder = {
     props.fields = [];
     if (!props.description) {
       props.description = "";
-      for (let child of children) {
-        if (child instanceof Array) props.fields.push(...child);
+      for (const child of children) {
+        if (Array.isArray(child)) props.fields.push(...child);
         else if (typeof child === "object" && "name" in child)
           props.fields.push(child);
         else props.description += String(child);
@@ -165,7 +165,7 @@ const ElementBuilder = {
   row: (props: JSX.IntrinsicElements["row"], children: DiscordNode[]) =>
     new Discord.ActionRowBuilder({
       ...props,
-      components: children[0] instanceof Array ? children[0] : children,
+      components: Array.isArray(children[0]) ? children[0] : children,
     }),
   button: (props: JSX.IntrinsicElements["button"], children: DiscordNode[]) => {
     const button = new Discord.ButtonBuilder({
@@ -185,7 +185,7 @@ const ElementBuilder = {
   },
   select: (props: JSX.IntrinsicElements["select"], children: DiscordNode[]) => {
     const select = new Discord.SelectMenuBuilder(props);
-    select.addOptions(children[0] instanceof Array ? children[0] : children);
+    select.addOptions(Array.isArray(children[0]) ? children[0] : children);
     if (props.onChange && props.customId)
       interactionHandlers.set(props.customId, props.onChange);
     return select;
@@ -198,7 +198,7 @@ const ElementBuilder = {
       type: props.type || 1,
       customId: props.customId,
       title: props.title,
-      components: children[0] instanceof Array ? children[0] : children,
+      components: Array.isArray(children[0]) ? children[0] : children,
     });
   },
   input: (props: JSX.IntrinsicElements["input"]) =>
@@ -213,8 +213,8 @@ export function createElement(
 ) => infer R
   ? R
   : never {
+  props = { ...props, children }; // 'props' is possibly null.
   if (typeof tag == "function") {
-    props = { ...props, children }; // 'props' is possibly null.
     if (
       tag.prototype && // filter arrow function
       "render" in tag.prototype // renderable component

@@ -93,7 +93,7 @@ declare global {
   namespace JSX {
     type Element = any;
     interface IntrinsicElements {
-      message: Discord.MessageOptions;
+      message: Discord.BaseMessageOptions;
       br: {};
       embed: Omit<Discord.EmbedData, "color" | "footer" | "timestamp"> & {
         color?: Discord.ColorResolvable;
@@ -107,10 +107,6 @@ declare global {
         emoji?: Discord.Emoji | string;
         onClick?: ButtonInteractionHandler;
       };
-      /**
-       * @deprecated Use `button` with `url` instead.
-       */
-      linkbutton: Omit<Discord.LinkButtonComponentData, "style" | "type">;
       select: Partial<Discord.SelectMenuComponentData> & {
         onChange?: SelectMenuInteractionHandler;
       };
@@ -187,15 +183,6 @@ const ElementBuilder = {
     if (props.emoji) button.setEmoji(props.emoji);
     return button;
   },
-  linkbutton: (
-    props: JSX.IntrinsicElements["linkbutton"],
-    children: DiscordNode[]
-  ) =>
-    new Discord.ButtonBuilder({
-      ...props,
-      style: Discord.ButtonStyle.Link,
-      label: props.label || children.flat(10).join(""),
-    }),
   select: (props: JSX.IntrinsicElements["select"], children: DiscordNode[]) => {
     const select = new Discord.SelectMenuBuilder(props);
     select.addOptions(children[0] instanceof Array ? children[0] : children);

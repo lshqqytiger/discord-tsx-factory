@@ -18,13 +18,13 @@ const client = new Client({ intents: [...] });
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.3.0 discord-tsx-factory
+$ npm install --save discord.js@14.4.0 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.3.0 discord-tsx-factory
+$ yarn add discord.js@14.4.0 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:
@@ -47,7 +47,7 @@ You need to modify your tsconfig.json to use discord-tsx-factory:
 ## Embed
 
 ```tsx
-message.channel.send({
+channel.send({
   embeds: (
     <>
       <embed
@@ -70,7 +70,7 @@ message.channel.send({
 If `description` property is specified, its children will be ignored.
 
 ```tsx
-message.channel.send({
+channel.send({
   embeds: (
     <>
       <embed title="title" color="Orange" description="description" />
@@ -91,7 +91,7 @@ You can handle button interaction using `client.on("interactionCreate", ...);`.
 `linkbutton` tag is deprecated! Use `button` with `url` property instead.
 
 ```tsx
-message.channel.send({
+channel.send({
   content: "message",
   components: (
     <>
@@ -116,7 +116,7 @@ message.channel.send({
 If `label` property is specified, its children will be ignored.
 
 ```tsx
-message.channel.send({
+channel.send({
   content: "message",
   components: (
     <>
@@ -142,7 +142,7 @@ message.channel.send({
 You can handle select interaction using `client.on("interactionCreate", ...);`.
 
 ```tsx
-message.channel.send({
+channel.send({
   content: "message",
   components: (
     <>
@@ -169,7 +169,7 @@ message.channel.send({
 You can handle modal interaction using `client.on("interactionCreate", ...);`.
 
 ```tsx
-message.channel.send({
+channel.send({
   embeds: <>...</>,
   components: (
     <>
@@ -214,7 +214,7 @@ message.channel.send({
 ## Message
 
 ```tsx
-message.channel.send(<message content="content" />);
+channel.send(<message content="content" />);
 ```
 
 ## Custom Components
@@ -258,7 +258,7 @@ class CustomEmbed extends DiscordComponent<Props> {
     );
   }
 }
-message.channel.send({
+channel.send({
   embeds: (
     <>
       <CustomEmbed customProp1="custom prop1" customProp2="custom prop2">
@@ -300,7 +300,7 @@ function CustomEmbed({
     </embed>
   );
 }
-await channel.send({
+channel.send({
   embeds: (
     <>
       <CustomEmbed customProp1="custom prop1" customProp2="custom prop2">

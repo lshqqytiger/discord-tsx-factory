@@ -57,6 +57,19 @@ client.off("interactionCreate", client.defaultInteractionCreateListener);
 client.on("interactionCreate", yourOwnHandler);
 ```
 
+or, simply define your client with discord.js
+
+```tsx
+import { createElement, Fragment } from "discord-tsx-factory";
+import { Client } from "discord.js";
+
+const client = new Client(...);
+
+client.on("interactionCreate", yourOwnHandler);
+
+channel.send(<message {...} />);
+```
+
 # Example usage
 
 ## Embed

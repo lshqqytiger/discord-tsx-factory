@@ -116,8 +116,6 @@ channel.send({
 
 You can handle button interaction using `client.on("interactionCreate", ...);`.
 
-`linkbutton` tag is deprecated! Use `button` with `url` property instead.
-
 ```tsx
 channel.send({
   content: "message",
@@ -132,9 +130,7 @@ channel.send({
         >
           primary button
         </button>
-        <button url="https://github.com" /* `linkbutton` tag is deprecated. */>
-          link button
-        </button>
+        <button url="https://github.com">link button</button>
       </row>
     </>
   ),

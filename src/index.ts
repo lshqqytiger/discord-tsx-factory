@@ -6,7 +6,25 @@ type StateSetter<S> = (
   interaction?: Discord.ButtonInteraction | Discord.SelectMenuInteraction
 ) => void;
 type StateTuple<S> = [Discord.Message, StateSetter<S>];
+interface ListenableBase {
+  once?: boolean;
+}
+class Listener implements ListenableBase {
+  public once?: boolean;
+  public listener: Function;
+  public type: InteractionType;
+  constructor(listener: Function, type: InteractionType, once?: boolean) {
+    this.listener = listener;
+    this.type = type;
+    this.once = once;
+  }
+}
 
+export enum InteractionType {
+  BUTTON,
+  SELECT_MENU,
+  MODAL,
+}
 export type DiscordFragment = Iterable<DiscordNode>;
 export type DiscordNode =
   | DiscordElement
@@ -21,11 +39,11 @@ export interface DiscordPortal extends DiscordElement {
   children: DiscordNode;
 }
 export class DiscordComponent<P = unknown> {
-  props: P;
+  public props: P;
   constructor(props: P) {
     this.props = props;
   }
-  render(): DiscordNode {
+  public render(): DiscordNode {
     throw new Error("Your component doesn't have 'render' method.");
   }
 }
@@ -33,23 +51,23 @@ export class DiscordStateComponent<
   P = unknown,
   S = unknown
 > extends DiscordComponent<P> {
-  props!: P;
-  state: S;
-  message?: Discord.Message;
+  public props!: P;
+  public state: S;
+  public message?: Discord.Message;
   constructor(props: P) {
     super(props);
 
     this.state = {} as S;
   }
-  render(): any {
+  public render(): any {
     throw new Error("Your component doesn't have 'render' method.");
   }
-  setState: StateSetter<S> = (state, interaction) => {
+  public setState: StateSetter<S> = (state, interaction) => {
     this.state = { ...this.state, ...state };
     if (interaction) interaction.update(this.render());
     else this.message?.edit(this.render());
   };
-  forceUpdate() {
+  public forceUpdate() {
     this.message?.edit(this.render());
   }
 }
@@ -80,10 +98,12 @@ export function useState<T extends DiscordStateComponent, S = unknown>(
 }
 
 export type ButtonInteractionHandler = (
-  interaction: Discord.ButtonInteraction
+  interaction: Discord.ButtonInteraction,
+  unbind: () => boolean
 ) => any;
 export type SelectMenuInteractionHandler = (
-  interaction: Discord.SelectMenuInteraction
+  interaction: Discord.SelectMenuInteraction,
+  unbind: () => boolean
 ) => any;
 export type ModalSubmitInteractionHandler = (
   interaction: Discord.ModalSubmitInteraction
@@ -106,10 +126,10 @@ declare global {
       button: Partial<Discord.ButtonComponent> & {
         emoji?: Discord.Emoji | string;
         onClick?: ButtonInteractionHandler;
-      };
+      } & ListenableBase;
       select: Partial<Discord.SelectMenuComponentData> & {
         onChange?: SelectMenuInteractionHandler;
-      };
+      } & ListenableBase;
       option: Discord.SelectMenuComponentOptionData;
       modal: Omit<Discord.ModalData, "type" | "components"> & {
         type?:
@@ -118,7 +138,7 @@ declare global {
         customId: string;
         title: string;
         onSubmit?: ModalSubmitInteractionHandler;
-      };
+      } & ListenableBase;
       input: Omit<Discord.TextInputComponentData, "type">;
     }
   }
@@ -132,7 +152,7 @@ declare module "discord.js" {
   }
 }
 
-const interactionHandlers = new Map<string, Function>();
+const interactionHandlers = new Map<string, Listener>();
 const ElementBuilder = {
   message: (props: JSX.IntrinsicElements["message"]) => props,
   br: () => "\n",
@@ -178,7 +198,10 @@ const ElementBuilder = {
     if (props.onClick && props.customId) {
       if (props.url)
         throw new Error("You can't use both customId/onClick and url.");
-      interactionHandlers.set(props.customId, props.onClick);
+      interactionHandlers.set(
+        props.customId,
+        new Listener(props.onClick, InteractionType.BUTTON, props.once)
+      );
     }
     if (props.emoji) button.setEmoji(props.emoji);
     return button;
@@ -187,13 +210,20 @@ const ElementBuilder = {
     const select = new Discord.SelectMenuBuilder(props);
     select.addOptions(Array.isArray(children[0]) ? children[0] : children);
     if (props.onChange && props.customId)
-      interactionHandlers.set(props.customId, props.onChange);
+      interactionHandlers.set(
+        props.customId,
+        new Listener(props.onChange, InteractionType.SELECT_MENU, props.once)
+      );
     return select;
   },
   option: (props: JSX.IntrinsicElements["option"]) =>
     new Discord.SelectMenuOptionBuilder(props),
   modal: (props: JSX.IntrinsicElements["modal"], children: DiscordNode[]) => {
-    if (props.onSubmit) interactionHandlers.set(props.customId, props.onSubmit);
+    if (props.onSubmit)
+      interactionHandlers.set(
+        props.customId,
+        new Listener(props.onSubmit, InteractionType.MODAL, props.once)
+      );
     return new Discord.ModalBuilder({
       type: props.type || 1,
       customId: props.customId,
@@ -234,14 +264,29 @@ export const Fragment = (
 export const deleteHandler = (key: string) => interactionHandlers.delete(key);
 
 export class Client extends Discord.Client {
-  defaultInteractionCreateListener = (interaction: Discord.Interaction) => {
-    if ("customId" in interaction)
-      interactionHandlers.get(interaction.customId)?.(interaction);
+  private _once: InteractionType[] = [InteractionType.MODAL];
+  public defaultInteractionCreateListener = (
+    interaction: Discord.Interaction
+  ) => {
+    if ("customId" in interaction) {
+      const interactionHandler = interactionHandlers.get(interaction.customId);
+      if (!interactionHandler) return;
+      interactionHandler.listener(interaction, () =>
+        interactionHandlers.delete(interaction.customId)
+      );
+      if (
+        (this._once.includes(interactionHandler.type) &&
+          interactionHandler.once !== false) ||
+        interactionHandler.once
+      )
+        interactionHandlers.delete(interaction.customId);
+    }
   };
-  constructor(options: Discord.ClientOptions) {
+  constructor(options: Discord.ClientOptions & { once?: InteractionType[] }) {
     super(options);
 
     this.on("interactionCreate", this.defaultInteractionCreateListener);
+    if (options.once) this._once = [...this._once, ...options.once];
   }
 }
 

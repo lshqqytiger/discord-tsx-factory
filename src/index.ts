@@ -71,7 +71,7 @@ export class DiscordStateComponent<
     this.message?.edit(this.render());
   }
 }
-async function _useState<T extends DiscordStateComponent, S = unknown>(
+async function initializeState<T extends DiscordStateComponent, S = unknown>(
   this: Discord.BaseChannel | Discord.BaseInteraction,
   component: T,
   state?: S
@@ -94,16 +94,16 @@ export function useState<T extends DiscordStateComponent, S = unknown>(
   component: T,
   state?: S
 ): Promise<StateTuple<S>> {
-  return _useState.bind(target)(component, state);
+  return initializeState.bind(target)(component, state);
 }
 
 export type ButtonInteractionHandler = (
   interaction: Discord.ButtonInteraction,
-  unbind: () => boolean
+  off: () => boolean
 ) => any;
 export type SelectMenuInteractionHandler = (
   interaction: Discord.SelectMenuInteraction,
-  unbind: () => boolean
+  off: () => boolean
 ) => any;
 export type ModalSubmitInteractionHandler = (
   interaction: Discord.ModalSubmitInteraction
@@ -145,10 +145,10 @@ declare global {
 }
 declare module "discord.js" {
   interface BaseChannel {
-    useState: typeof _useState;
+    useState: typeof initializeState;
   }
   interface BaseInteraction {
-    useState: typeof _useState;
+    useState: typeof initializeState;
   }
 }
 
@@ -225,7 +225,6 @@ const ElementBuilder = {
         new Listener(props.onSubmit, InteractionType.MODAL, props.once)
       );
     return new Discord.ModalBuilder({
-      type: props.type || 1,
       customId: props.customId,
       title: props.title,
       components: Array.isArray(children[0]) ? children[0] : children,
@@ -291,4 +290,4 @@ export class Client extends Discord.Client {
 }
 
 Discord.BaseChannel.prototype.useState =
-  Discord.BaseInteraction.prototype.useState = _useState;
+  Discord.BaseInteraction.prototype.useState = initializeState;

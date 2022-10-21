@@ -2,7 +2,7 @@
 
 Write Discord.js component in tsx.
 
-`discord-tsx-factory` is compatible with `discord.js` version `14.4.0 - 14.5.0`. (See `peerDependencies`)
+`discord-tsx-factory` is compatible with `discord.js` version `14.6.0`. (See `peerDependencies`)
 
 ```tsx
 import { createElement, Fragment, Client } from "discord-tsx-factory";
@@ -18,13 +18,13 @@ const client = new Client(...);
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.5.0 discord-tsx-factory
+$ npm install --save discord.js@14.6.0 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.5.0 discord-tsx-factory
+$ yarn add discord.js@14.6.0 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:
@@ -469,7 +469,7 @@ channel.send({
 });
 ```
 
-You can manually delete handler from memory by calling `unbind` function.
+You can manually delete handler from memory by calling `off` function.
 
 ```tsx
 import { Client, InteractionType } from "discord-tsx-factory";
@@ -484,8 +484,8 @@ channel.send({
       <row>
         <button
           customId="button1"
-          onClick={(event, unbind) => {
-            if (count === 2) unbind();
+          onClick={(event, off) => {
+            if (count === 2) off();
             event.reply(`button1 clicked! count: ${++count}`);
           }}
         >

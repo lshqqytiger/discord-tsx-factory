@@ -160,12 +160,10 @@ const ElementBuilder = {
     props.fields = [];
     if (!props.description) {
       props.description = "";
-      for (const child of children) {
-        if (Array.isArray(child)) props.fields.push(...child);
-        else if (typeof child === "object" && "name" in child)
+      for (const child of children.flat(Infinity))
+        if (typeof child === "object" && "name" in child)
           props.fields.push(child);
         else props.description += String(child);
-      }
     }
     props.footer &&= ElementBuilder.footer(props.footer, []);
     return new Discord.EmbedBuilder(props as Discord.EmbedData).setColor(
@@ -178,7 +176,7 @@ const ElementBuilder = {
       : { ...props, text: props.text || children.join("") },
   field: (props: JSX.IntrinsicElements["field"], children: DiscordNode[]) => ({
     name: props.name,
-    value: props.value || children.flat(10).join(""),
+    value: props.value || children.flat(Infinity).join(""),
     inline: props.inline,
   }),
   emoji: (props: JSX.IntrinsicElements["emoji"]) => props.emoji,
@@ -193,7 +191,7 @@ const ElementBuilder = {
       style:
         props.style ||
         (props.url ? Discord.ButtonStyle.Link : Discord.ButtonStyle.Primary),
-      label: props.label || children.flat(10).join(""),
+      label: props.label || children.flat(Infinity).join(""),
     } as Partial<Discord.InteractionButtonComponentData>);
     if (props.onClick && props.customId) {
       if (props.url)

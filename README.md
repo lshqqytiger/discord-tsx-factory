@@ -1,3 +1,5 @@
+<a href="https://www.npmjs.com/package/discord-tsx-factory"><img src="https://img.shields.io/npm/v/discord-tsx-factory.svg?maxAge=3600" alt="npm version" /></a>
+
 # About
 
 Write Discord.js component in tsx.
@@ -399,7 +401,7 @@ Basically (when you didn't turn off default interactionCreate listener and are u
 
 But with client configuration, component property and method, you can delete handler from memory.
 
-## Once for Client class
+## Once on Client constructor
 
 A client with `once: InteractionType[]` will delete handler for specified interaction from memory after that handler is once called.
 
@@ -438,7 +440,7 @@ channel.send({
 });
 ```
 
-## Once for Each Component
+## Once on Each Component
 
 A component with `once={true}` or `once` property will delete given handler from memory after it is once called.
 

@@ -311,7 +311,6 @@ export function createElement(
     }
     return tag(props, children);
   }
-  if (typeof props === "string") return props;
   props._tag = tag;
   return ElementBuilder(props);
 }

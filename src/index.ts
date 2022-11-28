@@ -296,10 +296,10 @@ function ElementBuilder(
 }
 export function createElement(
   tag: keyof JSX.IntrinsicElements | Function,
-  props: JSX.IntrinsicProps[keyof JSX.IntrinsicProps],
+  props: Exclude<JSX.IntrinsicProps[keyof JSX.IntrinsicProps], string>,
   ...children: DiscordNode[]
 ): JSX.Element {
-  Object.assign(props, children); // 'props' is possibly null.
+  props = { ...props, children }; // 'props' is possibly null.
   if (typeof tag == "function") {
     if (
       tag.prototype && // filter arrow function

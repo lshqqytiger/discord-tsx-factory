@@ -46,11 +46,11 @@ You need to modify your tsconfig.json to use discord-tsx-factory:
 
 # Example usage
 
-Go to [EXAMPLES.md](https://github.com/lshqqytiger/discord-tsx-factory/documents/EXAMPLES.md).
+Go to [EXAMPLES.md](https://github.com/lshqqytiger/discord-tsx-factory/blob/main/documents/EXAMPLES.md).
 
 # Listening and Handling interactions
 
-Go to [HANDLING_INTERACTIONS.md](https://github.com/lshqqytiger/discord-tsx-factory/documents/HANDLING_INTERACTIONS.md).
+Go to [HANDLING_INTERACTIONS.md](https://github.com/lshqqytiger/discord-tsx-factory/blob/main/documents/HANDLING_INTERACTIONS.md).
 
 ## Command
 

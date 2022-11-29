@@ -21,15 +21,15 @@ class Listener implements Listenable {
 }
 
 export enum InteractionType {
-  BUTTON,
-  SELECT_MENU,
-  MODAL,
+  Button,
+  SelectMenu,
+  Modal,
 }
 export type DiscordFragment = Iterable<DiscordNode>;
 export type DiscordNode = DiscordElement | string | number | DiscordFragment;
 export interface DiscordProps<T extends keyof JSX.IntrinsicElements> {
   _tag: T;
-  readonly children: DiscordNode[];
+  readonly children: JSX.ChildrenResolvable[T][];
 }
 export interface DiscordElement<P extends {} = {}> {
   readonly props: P;
@@ -111,6 +111,20 @@ export type ModalSubmitInteractionHandler = (
 declare global {
   namespace JSX {
     type Element = any;
+    interface ChildrenResolvable {
+      message: never;
+      br: never;
+      embed: Discord.APIEmbedField | DiscordNode;
+      footer: DiscordNode;
+      field: DiscordNode;
+      emoji: never;
+      row: Discord.ButtonBuilder | Discord.BaseSelectMenuBuilder<any>;
+      button: DiscordNode;
+      select: Discord.SelectMenuOptionBuilder;
+      option: DiscordNode;
+      modal: Discord.ActionRowData<Discord.ModalActionRowComponentData>;
+      input: never;
+    }
     interface IntrinsicElements {
       message: Discord.BaseMessageOptions;
       br: {};
@@ -128,10 +142,12 @@ declare global {
         emoji?: Discord.Emoji | string;
         onClick?: ButtonInteractionHandler;
       } & Listenable;
-      select: Partial<Discord.SelectMenuComponentData> & {
+      select: Omit<Discord.BaseSelectMenuComponentData, "type"> & {
+        type?: Discord.SelectType;
         onChange?: SelectMenuInteractionHandler;
+        channelTypes?: Discord.ChannelType[];
       } & Listenable;
-      option: Discord.SelectMenuComponentOptionData;
+      option: Discord.APISelectMenuOption;
       modal: Omit<Discord.ModalData, "type" | "components"> & {
         type?:
           | Discord.ComponentType.ActionRow
@@ -149,6 +165,12 @@ declare global {
   }
 }
 declare module "discord.js" {
+  export type SelectType =
+    | Discord.ComponentType.RoleSelect
+    | Discord.ComponentType.UserSelect
+    | Discord.ComponentType.StringSelect
+    | Discord.ComponentType.ChannelSelect
+    | Discord.ComponentType.MentionableSelect;
   interface BaseChannel {
     useState: typeof initializeState;
   }
@@ -161,145 +183,141 @@ const interactionHandlers = new Map<string, Listener>();
 function ElementBuilder(
   props: Exclude<JSX.IntrinsicProps[keyof JSX.IntrinsicProps], string>
 ) {
-  let element: JSX.Element;
-  switch (props._tag) {
-    case "message":
-      {
+  let element: JSX.Element | undefined;
+  if (props && props._tag)
+    switch (props._tag) {
+      case "message":
         element = props;
-      }
-      break;
-    case "br":
-      {
+        break;
+      case "br":
         element = "\n";
-      }
-      break;
-    case "embed":
-      {
-        props.fields = [];
-        if (!props.description) {
-          props.description = "";
-          for (const child of props.children.flat(Infinity))
-            if (typeof child === "object" && "name" in child)
-              props.fields.push(child);
-            else props.description += String(child);
+        break;
+      case "embed":
+        {
+          props.fields = [];
+          if (!props.description) {
+            props.description = "";
+            for (const child of props.children.flat(Infinity))
+              if (typeof child === "object" && "name" in child)
+                props.fields.push(child);
+              else props.description += String(child);
+          }
+          element = new Discord.EmbedBuilder({
+            ...props,
+            footer:
+              typeof props.footer === "string"
+                ? { text: props.footer }
+                : (props.footer as Discord.EmbedFooterOptions),
+            color: undefined,
+          }).setColor(props.color || null);
         }
-        element = new Discord.EmbedBuilder({
-          ...props,
-          footer:
-            typeof props.footer === "string"
-              ? { text: props.footer }
-              : (props.footer as Discord.EmbedFooterOptions),
-          color: undefined,
-        }).setColor(props.color || null);
-      }
-      break;
-    case "footer":
-      {
+        break;
+      case "footer":
         element =
-          typeof props === "string"
-            ? { text: props }
+          typeof props.children === "string"
+            ? { text: props.children }
             : { ...props, text: props.text || props.children.join("") };
-      }
-      break;
-    case "field":
-      {
+        break;
+      case "field":
         element = {
           name: props.name,
           value: props.value || props.children.flat(Infinity).join(""),
           inline: props.inline,
         };
-      }
-      break;
-    case "emoji":
-      {
+        break;
+      case "emoji":
         element = props.emoji;
-      }
-      break;
-    case "row":
-      {
+        break;
+      case "row":
         element = new Discord.ActionRowBuilder({
           ...props,
-          components: Array.isArray(props.children[0])
-            ? props.children[0]
-            : props.children,
+          components: props.children.flat(Infinity),
         });
-      }
-      break;
-    case "button":
-      {
-        element = new Discord.ButtonBuilder({
-          custom_id: props.customId || undefined,
-          disabled: props.disabled || undefined,
-          emoji: props.emoji,
-          label: props.label || props.children.flat(Infinity).join(""),
-        }).setStyle(
-          props.style ||
-            (props.url ? Discord.ButtonStyle.Link : Discord.ButtonStyle.Primary)
-        );
-        if (props.onClick && props.customId) {
-          if (props.url)
-            throw new Error("You can't use both customId/onClick and url.");
-          interactionHandlers.set(
-            props.customId,
-            new Listener(props.onClick, InteractionType.BUTTON, props.once)
+        break;
+      case "button":
+        {
+          element = new Discord.ButtonBuilder({
+            custom_id: props.customId || undefined,
+            disabled: props.disabled || undefined,
+            emoji: props.emoji,
+            label: props.label || props.children.flat(Infinity).join(""),
+          }).setStyle(
+            props.style ||
+              (props.url
+                ? Discord.ButtonStyle.Link
+                : Discord.ButtonStyle.Primary)
           );
+          if (props.onClick) {
+            if (!props.customId)
+              throw new Error(
+                "Button which has not url property must have a customId."
+              );
+            if (props.url)
+              throw new Error("You can't use both customId/onClick and url.");
+            interactionHandlers.set(
+              props.customId,
+              new Listener(props.onClick, InteractionType.Button, props.once)
+            );
+          }
+          if (props.url) element.setURL(props.url);
         }
-        if (props.url) element.setURL(props.url);
-      }
-      break;
-    case "select":
-      {
-        if (props.onChange && props.customId)
-          interactionHandlers.set(
-            props.customId,
-            new Listener(
-              props.onChange,
-              InteractionType.SELECT_MENU,
-              props.once
-            )
-          );
-        element = new Discord.SelectMenuBuilder(props).addOptions(
-          Array.isArray(props.children[0]) ? props.children[0] : props.children
-        );
-      }
-      break;
-    case "option":
-      {
-        element = new Discord.SelectMenuOptionBuilder(props);
-      }
-      break;
-    case "modal":
-      {
-        if (props.onSubmit)
-          interactionHandlers.set(
-            props.customId,
-            new Listener(props.onSubmit, InteractionType.MODAL, props.once)
-          );
-        element = new Discord.ModalBuilder({
-          customId: props.customId,
-          title: props.title,
-          components: Array.isArray(props.children[0])
-            ? props.children[0]
-            : props.children,
-        });
-      }
-      break;
-    case "input":
-      {
+        break;
+      case "select":
+        {
+          if (props.onChange && props.customId)
+            interactionHandlers.set(
+              props.customId,
+              new Listener(
+                props.onChange,
+                InteractionType.SelectMenu,
+                props.once
+              )
+            );
+          element =
+            !props.type || props.type === Discord.ComponentType.StringSelect
+              ? new Discord.StringSelectMenuBuilder({
+                  ...props,
+                  type: Discord.ComponentType.StringSelect,
+                }).addOptions(props.children.flat(Infinity))
+              : props.type === Discord.ComponentType.ChannelSelect
+              ? new Discord.ChannelSelectMenuBuilder({
+                  ...props,
+                  type: Discord.ComponentType.ChannelSelect,
+                }).setChannelTypes(props.channelTypes || [])
+              : new Discord.BaseSelectMenuBuilder({
+                  ...props,
+                  custom_id: props.customId, // I think this is discord.js' mistake.
+                });
+        }
+        break;
+      case "option":
+        element = new Discord.StringSelectMenuOptionBuilder(props);
+        break;
+      case "modal":
+        {
+          if (props.onSubmit)
+            interactionHandlers.set(
+              props.customId,
+              new Listener(props.onSubmit, InteractionType.Modal, props.once)
+            );
+          element = new Discord.ModalBuilder({
+            customId: props.customId,
+            title: props.title,
+            components: props.children.flat(Infinity),
+          });
+        }
+        break;
+      case "input":
         element = new Discord.TextInputBuilder({ ...props, type: 4 });
-      }
-      break;
-  }
-  delete element._tag;
-  delete element.children;
-  return element;
+        break;
+    }
+  return element; // return undefined if 'props' is not resolvable.
 }
 export function createElement(
   tag: keyof JSX.IntrinsicElements | Function,
-  props: Exclude<JSX.IntrinsicProps[keyof JSX.IntrinsicProps], string>,
-  ...children: DiscordNode[]
+  props: any,
+  ...children: any[]
 ): JSX.Element {
-  props = { ...props, children }; // 'props' is possibly null.
   if (typeof tag == "function") {
     if (
       tag.prototype && // filter arrow function
@@ -311,8 +329,7 @@ export function createElement(
     }
     return tag(props, children);
   }
-  props._tag = tag;
-  return ElementBuilder(props);
+  return ElementBuilder({ ...props, _tag: tag, children });
 }
 export const Fragment = (
   props: null,
@@ -323,7 +340,7 @@ export const deleteHandler =
   interactionHandlers.delete.bind(interactionHandlers);
 
 export class Client extends Discord.Client {
-  private _once: InteractionType[] = [InteractionType.MODAL];
+  private _once: InteractionType[] = [InteractionType.Modal];
   public defaultInteractionCreateListener = (
     interaction: Discord.Interaction
   ) => {

@@ -39,7 +39,7 @@ A client with `once: InteractionType[]` will delete handler for specified intera
 ```tsx
 import { Client, InteractionType } from "discord-tsx-factory";
 
-const client = new Client({ ..., once: [InteractionType.BUTTON] });
+const client = new Client({ ..., once: [InteractionType.Button] });
 ```
 
 (You don't need to configure `once` for modal because it is basically always and must be once)
@@ -49,7 +49,7 @@ If you want to except a handler from this configuration, you can use `once={fals
 ```tsx
 import { Client, InteractionType } from "discord-tsx-factory";
 
-const client = new Client({ ..., once: [InteractionType.BUTTON] });
+const client = new Client({ ..., once: [InteractionType.Button] });
 
 channel.send({
   content: "message",

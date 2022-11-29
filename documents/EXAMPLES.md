@@ -85,6 +85,8 @@ channel.send({
 
 ## Select & Option
 
+### StringSelectMenu
+
 ```tsx
 channel.send({
   content: "message",
@@ -100,6 +102,27 @@ channel.send({
           <option label="option1" description="description1" value="1" />
           <option label="option2" description="description2" value="2" />
         </select>
+      </row>
+    </>
+  ),
+});
+```
+
+### Other SelectMenus
+
+```tsx
+channel.send({
+  content: "message",
+  components: (
+    <>
+      <row>
+        <select
+          type={Discord.ComponentType.UserSelect}
+          customId="select1"
+          onChange={(event) => {
+            event.reply(`${event.values[0]} selected`);
+          }}
+        />
       </row>
     </>
   ),

@@ -54,13 +54,15 @@ Go to [HANDLING_INTERACTIONS.md](https://github.com/lshqqytiger/discord-tsx-fact
 
 ## Command
 
-~~I recently thought it was useless and removed it from 0.2.0.~~
+`discord-tsx-commands` is now available on npmjs!
 
-~~To register Command, use other cool modules or methods together. (e.g. `SlashCommandBuilder`)~~
+```tsx
+import * as Discord from "discord.js";
+import { createElement, Fragment } from "discord-tsx-factory";
+import "discord-tsx-commands";
+```
 
-I'm currently working on `discord-tsx-commands`, which is a extension package for `discord-tsx-factory` to handle commands using tsx.
-
-You can use other cool modules or methods together. (e.g. `SlashCommandBuilder`)
+Check out [discord-tsx-commands on GitHub](https://github.com/lshqqytiger/discord-tsx-commands) for more information.
 
 # Special Thanks
 

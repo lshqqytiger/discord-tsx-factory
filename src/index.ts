@@ -7,12 +7,12 @@ type StateSetter<S> = (
 ) => void;
 type StateTuple<S> = [Discord.Message, StateSetter<S>];
 interface Listenable {
-  once?: boolean;
+  readonly once?: boolean;
 }
 class Listener implements Listenable {
-  public once?: boolean;
-  public listener: Function;
-  public type: InteractionType;
+  public readonly once?: boolean;
+  public readonly listener: Function;
+  public readonly type: InteractionType;
   constructor(listener: Function, type: InteractionType, once?: boolean) {
     this.listener = listener;
     this.type = type;
@@ -47,7 +47,7 @@ export class DiscordStateComponent<
   P extends {} = {},
   S extends {} = {}
 > extends DiscordComponent<P> {
-  public props!: P;
+  public readonly props!: P;
   public state: S;
   public message?: Discord.Message;
   constructor(props: P) {
@@ -179,7 +179,7 @@ declare module "discord.js" {
   }
 }
 
-const interactionHandlers = new Map<string, Listener>();
+const interactionListeners = new Map<string, Listener>();
 function ElementBuilder(
   props: Exclude<JSX.IntrinsicProps[keyof JSX.IntrinsicProps], string>
 ) {
@@ -254,7 +254,7 @@ function ElementBuilder(
               );
             if (props.url)
               throw new Error("You can't use both customId/onClick and url.");
-            interactionHandlers.set(
+            interactionListeners.set(
               props.customId,
               new Listener(props.onClick, InteractionType.Button, props.once)
             );
@@ -265,7 +265,7 @@ function ElementBuilder(
       case "select":
         {
           if (props.onChange && props.customId)
-            interactionHandlers.set(
+            interactionListeners.set(
               props.customId,
               new Listener(
                 props.onChange,
@@ -296,7 +296,7 @@ function ElementBuilder(
       case "modal":
         {
           if (props.onSubmit)
-            interactionHandlers.set(
+            interactionListeners.set(
               props.customId,
               new Listener(props.onSubmit, InteractionType.Modal, props.once)
             );
@@ -318,6 +318,7 @@ export function createElement(
   props: any,
   ...children: any[]
 ): JSX.Element {
+  props = { ...props, children };
   if (typeof tag == "function") {
     if (
       tag.prototype && // filter arrow function
@@ -329,33 +330,34 @@ export function createElement(
     }
     return tag(props, children);
   }
-  return ElementBuilder({ ...props, _tag: tag, children });
+  return ElementBuilder({ ...props, _tag: tag });
 }
-export const Fragment = (
-  props: null,
-  children: DiscordNode[]
-): DiscordFragment => children;
-export const setHandler = interactionHandlers.set.bind(interactionHandlers);
-export const deleteHandler =
-  interactionHandlers.delete.bind(interactionHandlers);
+export const Fragment = (props: null, children: any[]): DiscordFragment =>
+  children;
+export const getListener = interactionListeners.get.bind(interactionListeners);
+export const setListener = interactionListeners.set.bind(interactionListeners);
+export const deleteListener =
+  interactionListeners.delete.bind(interactionListeners);
 
 export class Client extends Discord.Client {
   private _once: InteractionType[] = [InteractionType.Modal];
-  public defaultInteractionCreateListener = (
+  public readonly defaultInteractionCreateListener = (
     interaction: Discord.Interaction
   ) => {
     if ("customId" in interaction) {
-      const interactionHandler = interactionHandlers.get(interaction.customId);
-      if (!interactionHandler) return;
-      interactionHandler.listener(interaction, () =>
-        interactionHandlers.delete(interaction.customId)
+      const interactionListener = interactionListeners.get(
+        interaction.customId
+      );
+      if (!interactionListener) return;
+      interactionListener.listener(interaction, () =>
+        interactionListeners.delete(interaction.customId)
       );
       if (
-        (this._once.includes(interactionHandler.type) &&
-          interactionHandler.once !== false) ||
-        interactionHandler.once
+        (this._once.includes(interactionListener.type) &&
+          interactionListener.once !== false) ||
+        interactionListener.once
       )
-        interactionHandlers.delete(interaction.customId);
+        interactionListeners.delete(interaction.customId);
     }
   };
   constructor(options: Discord.ClientOptions & { once?: InteractionType[] }) {

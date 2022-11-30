@@ -9,7 +9,7 @@ type StateTuple<S> = [Discord.Message, StateSetter<S>];
 interface Listenable {
   readonly once?: boolean;
 }
-class Listener implements Listenable {
+export class Listener implements Listenable {
   public readonly once?: boolean;
   public readonly listener: Function;
   public readonly type: InteractionType;

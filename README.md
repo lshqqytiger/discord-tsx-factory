@@ -4,7 +4,7 @@
 
 Write Discord.js component in tsx.
 
-`discord-tsx-factory` is compatible with `discord.js` version `14.7.0`. (See `peerDependencies`)
+`discord-tsx-factory` is compatible with `discord.js` version `14.7.0 - 14.7.1`. (See `peerDependencies`)
 
 ```tsx
 import { createElement, Fragment, Client } from "discord-tsx-factory";
@@ -20,13 +20,13 @@ const client = new Client(...);
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.7.0 discord-tsx-factory
+$ npm install --save discord.js@14.7.1 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.7.0 discord-tsx-factory
+$ yarn add discord.js@14.7.1 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:

@@ -6,6 +6,7 @@ type StateSetter<S> = (
   interaction?: Discord.ButtonInteraction | Discord.SelectMenuInteraction
 ) => void;
 type StateTuple<S> = [Discord.Message, StateSetter<S>];
+type PropsWithChildren<P = {}> = P & { children?: JSX.Element[] };
 interface Listenable {
   readonly once?: boolean;
 }
@@ -31,70 +32,87 @@ export interface DiscordProps<T extends keyof JSX.IntrinsicElements> {
   _tag: T;
   readonly children: JSX.ChildrenResolvable[T][];
 }
-export interface DiscordElement<P extends {} = {}> {
+export interface DiscordElement<P = PropsWithChildren> {
   readonly props: P;
 }
-export class DiscordComponent<P extends {} = {}> implements DiscordElement<P> {
+export class Component<P = PropsWithChildren, S extends {} = {}>
+  implements DiscordElement<P>
+{
   public readonly props: P;
-  constructor(props: P) {
-    this.props = props;
-  }
-  public render(): DiscordNode {
-    throw new Error("Your component doesn't have 'render' method.");
-  }
-}
-export class DiscordStateComponent<
-  P extends {} = {},
-  S extends {} = {}
-> extends DiscordComponent<P> {
-  public readonly props!: P;
   public state: S;
-  public message?: Discord.Message;
-  constructor(props: P) {
-    super(props);
-
+  private _message?: Discord.Message;
+  private deleteMessage?: Discord.Message["delete"];
+  public set message(value: Discord.Message | undefined) {
+    if (!value) return;
+    this._message = value;
+    this.deleteMessage = this._message.delete;
+    this._message.delete = async () => {
+      this.componentWillUnmount?.();
+      return await this.deleteMessage!.call(this._message);
+    };
+  }
+  public get message(): Discord.Message | undefined {
+    return this._message;
+  }
+  public constructor(props: Readonly<P> | P) {
+    this.props = props;
     this.state = {} as S;
+  }
+  public componentDidMount?(): void | Promise<void>;
+  public componentDidUpdate?(prevState: Readonly<S>): void | Promise<void>;
+  public componentWillUnmount?(): void;
+  public componentDidCatch?(error: any): void;
+  public shouldComponentUpdate(nextState: Readonly<S>): boolean {
+    return true;
   }
   public render(): any {
     throw new Error("Your component doesn't have 'render' method.");
   }
   public setState: StateSetter<S> = (state, interaction) => {
-    Object.assign(this.state, state);
-    if (interaction) interaction.update(this.render());
-    else this.message?.edit(this.render());
+    const prevState = { ...this.state };
+    const shouldComponentUpdate = this.shouldComponentUpdate({
+      ...this.state,
+      ...state,
+    });
+    try {
+      Object.assign(this.state, state);
+      if (shouldComponentUpdate) {
+        if (interaction) interaction.update(this.render());
+        else this.message?.edit(this.render());
+        this.componentDidUpdate?.(prevState);
+      }
+    } catch (e) {
+      this.componentDidCatch?.(e);
+    }
   };
   public forceUpdate() {
-    this.message?.edit(this.render());
+    try {
+      this.message?.edit(this.render());
+    } catch (e) {
+      this.componentDidCatch?.(e);
+    }
   }
 }
-async function initializeState<
-  T extends DiscordStateComponent,
-  S extends {} = {}
->(
+async function initializeState<T extends Component, S extends {} = {}>(
   this: Discord.BaseChannel | Discord.BaseInteraction,
-  component: T,
-  state?: S
+  component: T
 ): Promise<StateTuple<S>> {
-  if (state) component.state = state;
-  if (this instanceof Discord.BaseChannel && this.isTextBased())
-    return [
-      (component.message = await this.send(component.render())),
-      component.setState,
-    ];
-  else if (this instanceof Discord.BaseInteraction && this.isRepliable())
-    return [
-      (component.message = await this.reply(component.render())),
-      component.setState,
-    ];
-  throw new Error("Invalid this or target. (Interaction or Channel)");
+  component.message = await (this instanceof Discord.BaseChannel &&
+  this.isTextBased()
+    ? this.send
+    : this instanceof Discord.BaseInteraction && this.isRepliable()
+    ? this.reply
+    : () => {
+        throw new Error("Invalid this or target. (Interaction or Channel)");
+      }
+  ).bind(this)(component.render());
+  await component.componentDidMount?.();
+  return [component.message, component.setState];
 }
-export function useState<T extends DiscordStateComponent, S extends {} = {}>(
-  target: Discord.BaseChannel | Discord.BaseInteraction,
-  component: T,
-  state?: S
-): Promise<StateTuple<S>> {
-  return initializeState.bind(target)(component, state);
+interface FunctionComponent<P = {}> {
+  (props: PropsWithChildren<P>): JSX.Element;
 }
+export type FC<P = {}> = FunctionComponent<P>;
 
 export type ButtonInteractionHandler = (
   interaction: Discord.ButtonInteraction,
@@ -172,10 +190,10 @@ declare module "discord.js" {
     | Discord.ComponentType.ChannelSelect
     | Discord.ComponentType.MentionableSelect;
   interface BaseChannel {
-    useState: typeof initializeState;
+    sendState: typeof initializeState;
   }
   interface BaseInteraction {
-    useState: typeof initializeState;
+    replyState: typeof initializeState;
   }
 }
 
@@ -319,21 +337,21 @@ export function createElement(
   ...children: any[]
 ): JSX.Element {
   props = { ...props, children };
-  if (typeof tag == "function") {
+  if (typeof tag === "function") {
     if (
       tag.prototype && // filter arrow function
       "render" in tag.prototype // renderable component
     ) {
       const constructed = Reflect.construct(tag, [props]);
-      if (constructed.setState) return constructed;
-      return constructed.render();
+      const rendered = constructed.render();
+      return rendered._tag === "message" ? constructed : rendered;
     }
-    return tag(props, children);
+    return tag(props);
   }
   return ElementBuilder({ ...props, _tag: tag });
 }
-export const Fragment = (props: null, children: any[]): DiscordFragment =>
-  children;
+export const Fragment = (props: PropsWithChildren): DiscordFragment =>
+  props.children || [];
 export const getListener = interactionListeners.get.bind(interactionListeners);
 export const setListener = interactionListeners.set.bind(interactionListeners);
 export const deleteListener =
@@ -360,7 +378,9 @@ export class Client extends Discord.Client {
         interactionListeners.delete(interaction.customId);
     }
   };
-  constructor(options: Discord.ClientOptions & { once?: InteractionType[] }) {
+  public constructor(
+    options: Discord.ClientOptions & { once?: InteractionType[] }
+  ) {
     super(options);
 
     this.on("interactionCreate", this.defaultInteractionCreateListener);
@@ -368,5 +388,5 @@ export class Client extends Discord.Client {
   }
 }
 
-Discord.BaseChannel.prototype.useState =
-  Discord.BaseInteraction.prototype.useState = initializeState;
+Discord.BaseChannel.prototype.sendState = initializeState;
+Discord.BaseInteraction.prototype.replyState = initializeState;

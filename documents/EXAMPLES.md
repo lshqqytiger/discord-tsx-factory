@@ -184,7 +184,7 @@ channel.send(<message content="content" />);
 
 ### Using class
 
-You can define your own component using class which extends `DiscordComponent`.
+You can define your own component using class which extends `Component`.
 
 Custom Class Component must have `render` method which returns `DiscordNode`.
 
@@ -193,7 +193,7 @@ import {
   createElement,
   Fragment,
   DiscordNode,
-  DiscordComponent,
+  Component,
 } from "discord-tsx-factory";
 
 interface Props {
@@ -201,14 +201,8 @@ interface Props {
   customProp2: string;
   children?: DiscordNode;
 }
-class CustomEmbed extends DiscordComponent<Props> {
-  constructor(props: Props) {
-    super(props);
-
-    // Since discord-tsx-factory is not React, you can do anything with this.props.
-    this.props.customProp1 = "field name 1";
-  }
-  render(): DiscordNode {
+class CustomEmbed extends Component<Props> {
+  public render(): DiscordNode {
     return (
       <embed title="test embed">
         <field name={this.props.customProp1}>
@@ -237,12 +231,7 @@ channel.send({
 You can define your own component using function which returns `DiscordNode`.
 
 ```tsx
-import {
-  createElement,
-  Fragment,
-  DiscordNode,
-  DiscordComponent,
-} from "discord-tsx-factory";
+import { createElement, Fragment, DiscordNode, FC } from "discord-tsx-factory";
 
 interface Props {
   customProp1: string;
@@ -254,8 +243,6 @@ function CustomEmbed({
   customProp2,
   children,
 }: Props): DiscordNode {
-  customProp1 = "field name 1";
-
   return (
     <embed title="test embed">
       <field name={customProp1}>{children} Test 1</field>
@@ -263,6 +250,15 @@ function CustomEmbed({
     </embed>
   );
 }
+// or
+const CustomEmbed: FC = ({ customProp1, customProp2, children }: Props) => {
+  return (
+    <embed title="test embed">
+      <field name={customProp1}>{children} Test 1</field>
+      <field name={customProp2}>{children} Test 2</field>
+    </embed>
+  );
+};
 channel.send({
   embeds: (
     <>
@@ -276,15 +272,10 @@ channel.send({
 
 ## State
 
-With discord-tsx-factory, all classes that extend `BaseChannel` or `BaseInteraction` have `useState` method.
+With discord-tsx-factory, all classes that extend `BaseChannel` have `sendState` method and those that extend `BaseInteraction` have `replyState` method.
 
 ```tsx
-import {
-  createElement,
-  Fragment,
-  DiscordStateComponent,
-  useState,
-} from "discord-tsx-factory";
+import { createElement, Fragment, Component } from "discord-tsx-factory";
 
 interface Props {
   contents: string[];
@@ -292,9 +283,11 @@ interface Props {
 interface State {
   page: number;
 }
-class CustomMessage extends DiscordStateComponent<Props, State> {
-  state: State = { page: 0 }; // Initial state
-  render() {
+class CustomMessage extends Component<Props, State> {
+  public state: State = { page: 0 };
+  public render() {
+    // 'render' must return 'message' element if you want State.
+    // It's because 'discord-tsx-factory' doesn't support 'getDerivedStateFromProps' life cycle yet.
     return (
       <message
         embeds={
@@ -316,12 +309,9 @@ class CustomMessage extends DiscordStateComponent<Props, State> {
               </button>
               <button
                 customId="button_next"
-                onClick={async (interaction) => {
-                  this.setState({ page: this.state.page + 1 }, interaction);
-
-                  // interactions also have 'useState'.
-                  const [...] = await interaction.useState(...);
-                }}
+                onClick={async (interaction) =>
+                  this.setState({ page: this.state.page + 1 }, interaction)
+                }
               >
                 next
               </button>
@@ -332,14 +322,52 @@ class CustomMessage extends DiscordStateComponent<Props, State> {
     );
   }
 }
-// 'useState' returns [Discord.Message, (state: S) => void].
-const [message, setState] = await channel.useState(
-  <CustomMessage contents={["page0", "page1"]} />, { page: 0 } // Initial state is optional. It will overwrite pre-defined state (in class).
+// 'sendState' returns [Discord.Message, (state: S) => void].
+const [message, setState] = await channel.sendState(
+  <CustomMessage contents={["page0", "page1"]} />
 );
-// or
-const [message, setState] = await useState(
-  channel,
-  <CustomMessage contents={["page0", "page1"]} />,
-  { page: 0 }
-);
+```
+
+## Message Life Cycle
+
+`constructor` → `shouldComponentUpdate` → `render`
+
+### componentDidMount
+
+```ts
+class CustomMessage {
+  public componentDidMount(): void | Promise<void>;
+}
+```
+
+### componentDidUpdate
+
+```ts
+class CustomMessage {
+  public componentDidUpdate(prevState: Readonly<S>): void | Promise<void>;
+}
+```
+
+### componentWillUnmount
+
+```ts
+class CustomMessage {
+  public componentWillUnmount(): void;
+}
+```
+
+### componentDidCatch
+
+```ts
+class CustomMessage {
+  public componentDidCatch(error: any): void;
+}
+```
+
+### shouldComponentUpdate
+
+```ts
+class CustomMessage {
+  public shouldComponentUpdate(nextState: Readonly<S>): boolean;
+}
 ```

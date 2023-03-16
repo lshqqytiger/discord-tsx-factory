@@ -21,9 +21,9 @@
   "homepage": "https://github.com/lshqqytiger/discord-tsx-factory#readme",
   "devDependencies": {
     "@types/node": "^18.11.9",
-    "discord.js": "^14.7.1"
+    "discord.js": "^14.8.0"
   },
   "peerDependencies": {
-    "discord.js": "14.7.0 - 14.7.1"
+    "discord.js": "14.7.0 - 14.8.0"
   }
 }

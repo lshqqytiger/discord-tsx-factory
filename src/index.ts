@@ -74,29 +74,33 @@ export class Component<P = PropsWithChildren, S extends {} = {}>
       ...this.state,
       ...state,
     });
-    try {
-      Object.assign(this.state, state);
-      if (shouldComponentUpdate) {
-        if (interaction) interaction.update(this.render());
-        else this.message?.edit(this.render());
-        this.componentDidUpdate?.(prevState);
-      }
-    } catch (e) {
-      this.componentDidCatch?.(e);
+    Object.assign(this.state, state);
+    if (shouldComponentUpdate) {
+      const rendered = renderAndCatch(this);
+      if (rendered instanceof Error) throw rendered;
+      if (rendered === undefined) return;
+      if (interaction) interaction.update(rendered);
+      else this.message?.edit(rendered);
+      this.componentDidUpdate?.(prevState);
     }
   };
   public forceUpdate() {
-    try {
-      this.message?.edit(this.render());
-    } catch (e) {
-      this.componentDidCatch?.(e);
-    }
+    const rendered = renderAndCatch(this);
+    if (rendered instanceof Error) throw rendered;
+    if (rendered === undefined) return;
+    if (rendered) this.message?.edit(rendered);
   }
 }
 async function initializeState<T extends Component, S extends {} = {}>(
   this: Discord.BaseChannel | Discord.BaseInteraction,
   component: T
 ): Promise<StateTuple<S>> {
+  const rendered = renderAndCatch(component);
+  if (rendered instanceof Error) throw rendered;
+  if (rendered === undefined)
+    throw new Error(
+      "Failed to initialize state message. An error occurred while rendering message."
+    );
   component.message = await (this instanceof Discord.BaseChannel &&
   this.isTextBased()
     ? this.send
@@ -105,9 +109,17 @@ async function initializeState<T extends Component, S extends {} = {}>(
     : () => {
         throw new Error("Invalid this or target. (Interaction or Channel)");
       }
-  ).bind(this)(component.render());
+  ).bind(this)(rendered);
   await component.componentDidMount?.();
   return [component.message, component.setState];
+}
+function renderAndCatch(component: Component<any, any>) {
+  try {
+    return component.render();
+  } catch (e) {
+    if (component.componentDidCatch) component.componentDidCatch(e);
+    else return e;
+  }
 }
 interface FunctionComponent<P = {}> {
   (props: PropsWithChildren<P>): JSX.Element;
@@ -343,7 +355,10 @@ export function createElement(
       "render" in tag.prototype // renderable component
     ) {
       const constructed = Reflect.construct(tag, [props]);
-      const rendered = constructed.render();
+      const rendered = renderAndCatch(constructed);
+      if (rendered instanceof Error) throw rendered;
+      if (rendered === undefined)
+        throw new Error("An error occurred while rendering message.");
       return rendered._tag === "message" ? constructed : rendered;
     }
     return tag(props);

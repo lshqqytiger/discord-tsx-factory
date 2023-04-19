@@ -1,6 +1,7 @@
 import * as Discord from "discord.js";
+import { PartialOf } from "./utils";
+import { Wrapper, wrap } from "./wrapper";
 
-type PartialOf<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
 type StateSetter<S> = (
   state: S,
   interaction?: Discord.ButtonInteraction | Discord.SelectMenuInteraction
@@ -27,17 +28,16 @@ export enum InteractionType {
   Modal,
 }
 export type DiscordFragment = Iterable<DiscordNode>;
-export type DiscordNode = DiscordElement | string | number | DiscordFragment;
-export interface DiscordProps<T extends keyof JSX.IntrinsicElements> {
+export type DiscordNode = string | number | DiscordFragment;
+export interface DiscordBaseElement<T extends keyof JSX.IntrinsicProps> {
+  readonly children?: JSX.ChildrenResolvable[T];
+}
+interface DiscordInternalElement<T extends keyof JSX.IntrinsicProps>
+  extends DiscordBaseElement<T> {
   _tag: T;
-  readonly children: JSX.ChildrenResolvable[T][];
+  readonly children: JSX.ChildrenResolvable[T];
 }
-export interface DiscordElement<P = PropsWithChildren> {
-  readonly props: P;
-}
-export class Component<P = PropsWithChildren, S extends {} = {}>
-  implements DiscordElement<P>
-{
+export class Component<P = PropsWithChildren, S extends {} = {}> {
   public readonly props: P;
   public state: S;
   private _message?: Discord.Message;
@@ -91,27 +91,27 @@ export class Component<P = PropsWithChildren, S extends {} = {}>
     if (rendered) this.message?.edit(rendered);
   }
 }
-async function initializeState<T extends Component, S extends {} = {}>(
-  this: Discord.BaseChannel | Discord.BaseInteraction,
-  component: T
-): Promise<StateTuple<S>> {
-  const rendered = renderAndCatch(component);
-  if (rendered instanceof Error) throw rendered;
-  if (rendered === undefined)
-    throw new Error(
-      "Failed to initialize state message. An error occurred while rendering message."
-    );
-  component.message = await (this instanceof Discord.BaseChannel &&
-  this.isTextBased()
-    ? this.send
-    : this instanceof Discord.BaseInteraction && this.isRepliable()
-    ? this.reply
-    : () => {
-        throw new Error("Invalid this or target. (Interaction or Channel)");
-      }
-  ).bind(this)(rendered);
-  await component.componentDidMount?.();
-  return [component.message, component.setState];
+function getSender(
+  target: Discord.BaseChannel | Discord.BaseInteraction | Discord.Message
+) {
+  if (target instanceof Discord.BaseChannel && target.isTextBased())
+    return (rendered: any) => target.send(rendered);
+  if (target instanceof Discord.BaseInteraction && target.isRepliable())
+    return target.reply.bind(target);
+  if (target instanceof Discord.Message) return target.edit.bind(target);
+  throw new Error("Failed to get sender from target.");
+}
+export function render(
+  element: unknown,
+  container: Discord.BaseChannel | Discord.BaseInteraction | Discord.Message
+) {
+  if (element instanceof Component) {
+    const rendered = renderAndCatch(element);
+    if (rendered instanceof Error) throw rendered;
+    if (rendered === undefined) throw new Error("Failed to render element.");
+    return getSender(container)(rendered);
+  }
+  return getSender(container)(element as any);
 }
 function renderAndCatch(component: Component<any, any>) {
   try {
@@ -144,23 +144,23 @@ declare global {
     interface ChildrenResolvable {
       message: never;
       br: never;
-      embed: Discord.APIEmbedField | DiscordNode;
+      embed: Discord.APIEmbedField[] | DiscordNode;
       footer: DiscordNode;
       field: DiscordNode;
       emoji: never;
-      row: Discord.ButtonBuilder | Discord.BaseSelectMenuBuilder<any>;
+      row: (Discord.ButtonBuilder | Discord.BaseSelectMenuBuilder<any>)[];
       button: DiscordNode;
-      select: Discord.SelectMenuOptionBuilder;
+      select: Discord.SelectMenuOptionBuilder[];
       option: DiscordNode;
-      modal: Discord.ActionRowData<Discord.ModalActionRowComponentData>;
+      modal: Discord.ActionRowData<Discord.ModalActionRowComponentData>[];
       input: never;
     }
-    interface IntrinsicElements {
+    interface IntrinsicProps {
       message: Discord.BaseMessageOptions;
       br: {};
       embed: Omit<Discord.EmbedData, "color" | "footer" | "timestamp"> & {
         color?: Discord.ColorResolvable;
-        footer?: IntrinsicElements["footer"];
+        footer?: IntrinsicProps["footer"];
       };
       footer: PartialOf<Discord.EmbedFooterData, "text"> | string;
       field: PartialOf<Discord.EmbedField, "value" | "inline">;
@@ -188,12 +188,17 @@ declare global {
       } & Listenable;
       input: Omit<Discord.TextInputComponentData, "type">;
     }
-    type IntrinsicProps = {
-      [T in keyof JSX.IntrinsicElements]: DiscordProps<T> &
-        JSX.IntrinsicElements[T];
+    type IntrinsicElements = {
+      [T in keyof JSX.IntrinsicProps]: DiscordBaseElement<T> &
+        JSX.IntrinsicProps[T];
+    };
+    type IntrinsicInternalElements = {
+      [T in keyof JSX.IntrinsicProps]: DiscordInternalElement<T> &
+        JSX.IntrinsicProps[T];
     };
   }
 }
+type DTSXComponent = Component;
 declare module "discord.js" {
   export type SelectType =
     | Discord.ComponentType.RoleSelect
@@ -201,17 +206,26 @@ declare module "discord.js" {
     | Discord.ComponentType.StringSelect
     | Discord.ComponentType.ChannelSelect
     | Discord.ComponentType.MentionableSelect;
-  interface BaseChannel {
-    sendState: typeof initializeState;
+  interface PartialTextBasedChannelFields<InGuild extends boolean = boolean> {
+    send(options: DTSXComponent): Promise<Message<InGuild>>;
   }
-  interface BaseInteraction {
-    replyState: typeof initializeState;
+  interface CommandInteraction<Cached extends CacheType = CacheType> {
+    reply(options: DTSXComponent): Promise<Message<BooleanCache<Cached>>>;
+  }
+  interface MessageComponentInteraction<Cached extends CacheType = CacheType> {
+    reply(options: DTSXComponent): Promise<Message<BooleanCache<Cached>>>;
+  }
+  interface ModalSubmitInteraction<Cached extends CacheType = CacheType> {
+    reply(options: DTSXComponent): Promise<Message<BooleanCache<Cached>>>;
   }
 }
 
 const interactionListeners = new Map<string, Listener>();
 function ElementBuilder(
-  props: Exclude<JSX.IntrinsicProps[keyof JSX.IntrinsicProps], string>
+  props: Exclude<
+    JSX.IntrinsicInternalElements[keyof JSX.IntrinsicInternalElements],
+    string
+  >
 ) {
   let element: JSX.Element | undefined;
   if (props && props._tag)
@@ -227,10 +241,12 @@ function ElementBuilder(
           props.fields = [];
           if (!props.description) {
             props.description = "";
-            for (const child of props.children.flat(Infinity))
-              if (typeof child === "object" && "name" in child)
-                props.fields.push(child);
-              else props.description += String(child);
+            if (props.children instanceof Array)
+              for (const child of props.children.flat(Infinity))
+                if (typeof child === "object" && "name" in child)
+                  props.fields.push(child);
+                else props.description += String(child);
+            else props.description = String(props.children);
           }
           element = new Discord.EmbedBuilder({
             ...props,
@@ -244,14 +260,21 @@ function ElementBuilder(
         break;
       case "footer":
         element =
-          typeof props.children === "string"
-            ? { text: props.children }
-            : { ...props, text: props.text || props.children.join("") };
+          typeof props.children === "object"
+            ? {
+                ...props,
+                text: props.text || Array.from(props.children).join(""),
+              }
+            : { text: props.children };
         break;
       case "field":
         element = {
           name: props.name,
-          value: props.value || props.children.flat(Infinity).join(""),
+          value:
+            props.value ||
+            (typeof props.children === "object"
+              ? Array.from(props.children).flat(Infinity).join("")
+              : props.children),
           inline: props.inline,
         };
         break;
@@ -270,7 +293,11 @@ function ElementBuilder(
             custom_id: props.customId || undefined,
             disabled: props.disabled || undefined,
             emoji: props.emoji,
-            label: props.label || props.children.flat(Infinity).join(""),
+            label:
+              props.label ||
+              (typeof props.children === "object"
+                ? Array.from(props.children).flat(Infinity).join("")
+                : String(props.children)),
           }).setStyle(
             props.style ||
               (props.url
@@ -344,11 +371,11 @@ function ElementBuilder(
   return element; // return undefined if 'props' is not resolvable.
 }
 export function createElement(
-  tag: keyof JSX.IntrinsicElements | Function,
+  tag: keyof JSX.IntrinsicProps | Function,
   props: any,
   ...children: any[]
 ): JSX.Element {
-  props = { ...props, children };
+  if (!props || !props.children) props = { ...props, children };
   if (typeof tag === "function") {
     if (
       tag.prototype && // filter arrow function
@@ -403,5 +430,18 @@ export class Client extends Discord.Client {
   }
 }
 
-Discord.BaseChannel.prototype.sendState = initializeState;
-Discord.BaseInteraction.prototype.replyState = initializeState;
+const Wrapper: Wrapper = (original) =>
+  function (this: any, options: any) {
+    if (options instanceof Component) return render(options, this);
+    return original.call(this, options);
+  };
+
+wrap(Discord.TextChannel.prototype, "send", Wrapper);
+wrap(Discord.DMChannel.prototype, "send", Wrapper);
+wrap(Discord.NewsChannel.prototype, "send", Wrapper);
+wrap(Discord.StageChannel.prototype, "send", Wrapper);
+wrap(Discord.VoiceChannel.prototype, "send", Wrapper);
+
+wrap(Discord.CommandInteraction.prototype, "reply", Wrapper);
+wrap(Discord.MessageComponentInteraction.prototype, "reply", Wrapper);
+wrap(Discord.ModalSubmitInteraction.prototype, "reply", Wrapper);

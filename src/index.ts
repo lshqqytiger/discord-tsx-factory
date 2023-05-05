@@ -177,7 +177,7 @@ declare global {
         onChange?: SelectMenuInteractionHandler;
         channelTypes?: Discord.ChannelType[];
       } & Listenable;
-      option: Discord.APISelectMenuOption;
+      option: Discord.SelectMenuComponentOptionData;
       modal: Omit<Discord.ModalData, "type" | "components"> & {
         type?:
           | Discord.ComponentType.ActionRow

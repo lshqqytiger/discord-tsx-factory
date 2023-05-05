@@ -330,21 +330,22 @@ function ElementBuilder(
                 props.once
               )
             );
-          element =
-            !props.type || props.type === Discord.ComponentType.StringSelect
-              ? new Discord.StringSelectMenuBuilder({
-                  ...props,
-                  type: Discord.ComponentType.StringSelect,
-                }).addOptions(props.children.flat(Infinity))
-              : props.type === Discord.ComponentType.ChannelSelect
-              ? new Discord.ChannelSelectMenuBuilder({
-                  ...props,
-                  type: Discord.ComponentType.ChannelSelect,
-                }).setChannelTypes(props.channelTypes || [])
-              : new Discord.BaseSelectMenuBuilder({
-                  ...props,
-                  custom_id: props.customId, // I think this is discord.js' mistake.
-                });
+          element = Discord.StringSelectMenuBuilder;
+          switch (props.type) {
+            case Discord.ComponentType.RoleSelect:
+              element = Discord.RoleSelectMenuBuilder;
+              break;
+            case Discord.ComponentType.UserSelect:
+              element = Discord.UserSelectMenuBuilder;
+              break;
+            case Discord.ComponentType.ChannelSelect:
+              element = Discord.ChannelSelectMenuBuilder;
+              break;
+            case Discord.ComponentType.MentionableSelect:
+              element = Discord.MentionableSelectMenuBuilder;
+              break;
+          }
+          element = new element({ ...props, options: props.children });
         }
         break;
       case "option":

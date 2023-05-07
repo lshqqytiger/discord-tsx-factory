@@ -237,26 +237,24 @@ function ElementBuilder(
         element = "\n";
         break;
       case "embed":
-        {
-          props.fields = [];
-          if (!props.description) {
-            props.description = "";
-            if (props.children instanceof Array)
-              for (const child of props.children.flat(Infinity))
-                if (typeof child === "object" && "name" in child)
-                  props.fields.push(child);
-                else props.description += String(child);
-            else props.description = String(props.children);
-          }
-          element = new Discord.EmbedBuilder({
-            ...props,
-            footer:
-              typeof props.footer === "string"
-                ? { text: props.footer }
-                : (props.footer as Discord.EmbedFooterOptions),
-            color: undefined,
-          }).setColor(props.color || null);
+        props.fields = [];
+        if (!props.description) {
+          props.description = "";
+          if (props.children instanceof Array)
+            for (const child of props.children.flat(Infinity))
+              if (typeof child === "object" && "name" in child)
+                props.fields.push(child);
+              else props.description += String(child);
+          else props.description = String(props.children);
         }
+        element = new Discord.EmbedBuilder({
+          ...props,
+          footer:
+            typeof props.footer === "string"
+              ? { text: props.footer }
+              : (props.footer as Discord.EmbedFooterOptions),
+          color: undefined,
+        }).setColor(props.color || null);
         break;
       case "footer":
         element =
@@ -288,82 +286,70 @@ function ElementBuilder(
         });
         break;
       case "button":
-        {
-          element = new Discord.ButtonBuilder({
-            custom_id: props.customId || undefined,
-            disabled: props.disabled || undefined,
-            emoji: props.emoji,
-            label:
-              props.label ||
-              (typeof props.children === "object"
-                ? Array.from(props.children).flat(Infinity).join("")
-                : String(props.children)),
-          }).setStyle(
-            props.style ||
-              (props.url
-                ? Discord.ButtonStyle.Link
-                : Discord.ButtonStyle.Primary)
-          );
-          if (props.onClick) {
-            if (!props.customId)
-              throw new Error(
-                "Button which has not url property must have a customId."
-              );
-            if (props.url)
-              throw new Error("You can't use both customId/onClick and url.");
-            interactionListeners.set(
-              props.customId,
-              new Listener(props.onClick, InteractionType.Button, props.once)
+        element = new Discord.ButtonBuilder({
+          custom_id: props.customId || undefined,
+          disabled: props.disabled || undefined,
+          emoji: props.emoji,
+          label:
+            props.label ||
+            (typeof props.children === "object"
+              ? Array.from(props.children).flat(Infinity).join("")
+              : String(props.children)),
+        }).setStyle(
+          props.style ||
+            (props.url ? Discord.ButtonStyle.Link : Discord.ButtonStyle.Primary)
+        );
+        if (props.onClick) {
+          if (!props.customId)
+            throw new Error(
+              "Button which has not url property must have a customId."
             );
-          }
-          if (props.url) element.setURL(props.url);
+          if (props.url)
+            throw new Error("You can't use both customId/onClick and url.");
+          interactionListeners.set(
+            props.customId,
+            new Listener(props.onClick, InteractionType.Button, props.once)
+          );
         }
+        if (props.url) element.setURL(props.url);
         break;
       case "select":
-        {
-          if (props.onChange && props.customId)
-            interactionListeners.set(
-              props.customId,
-              new Listener(
-                props.onChange,
-                InteractionType.SelectMenu,
-                props.once
-              )
-            );
-          element = Discord.StringSelectMenuBuilder;
-          switch (props.type) {
-            case Discord.ComponentType.RoleSelect:
-              element = Discord.RoleSelectMenuBuilder;
-              break;
-            case Discord.ComponentType.UserSelect:
-              element = Discord.UserSelectMenuBuilder;
-              break;
-            case Discord.ComponentType.ChannelSelect:
-              element = Discord.ChannelSelectMenuBuilder;
-              break;
-            case Discord.ComponentType.MentionableSelect:
-              element = Discord.MentionableSelectMenuBuilder;
-              break;
-          }
-          element = new element({ ...props, options: props.children });
+        if (props.onChange && props.customId)
+          interactionListeners.set(
+            props.customId,
+            new Listener(props.onChange, InteractionType.SelectMenu, props.once)
+          );
+        element = Discord.StringSelectMenuBuilder;
+        switch (props.type) {
+          case Discord.ComponentType.RoleSelect:
+            element = Discord.RoleSelectMenuBuilder;
+            break;
+          case Discord.ComponentType.UserSelect:
+            element = Discord.UserSelectMenuBuilder;
+            break;
+          case Discord.ComponentType.ChannelSelect:
+            element = Discord.ChannelSelectMenuBuilder;
+            break;
+          case Discord.ComponentType.MentionableSelect:
+            element = Discord.MentionableSelectMenuBuilder;
+            break;
         }
+        element = new element({ ...props, options: props.children });
         break;
       case "option":
-        element = new Discord.StringSelectMenuOptionBuilder(props);
+        element = props; // to be internally wrapped later.
         break;
       case "modal":
-        {
-          if (props.onSubmit)
-            interactionListeners.set(
-              props.customId,
-              new Listener(props.onSubmit, InteractionType.Modal, props.once)
-            );
-          element = new Discord.ModalBuilder({
-            customId: props.customId,
-            title: props.title,
-            components: props.children.flat(Infinity),
-          });
-        }
+        if (props.onSubmit)
+          interactionListeners.set(
+            props.customId,
+            new Listener(props.onSubmit, InteractionType.Modal, props.once)
+          );
+        element = new Discord.ModalBuilder({
+          customId: props.customId,
+          title: props.title,
+          components: props.children.flat(Infinity),
+        });
         break;
       case "input":
         element = new Discord.TextInputBuilder({ ...props, type: 4 });

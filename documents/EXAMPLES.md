@@ -85,7 +85,7 @@ channel.send({
 
 ## Select & Option
 
-### StringSelectMenu
+### String SelectMenu
 
 ```tsx
 channel.send({
@@ -272,8 +272,6 @@ channel.send({
 
 ## State
 
-With discord-tsx-factory, all classes that extend `BaseChannel` have `sendState` method and those that extend `BaseInteraction` have `replyState` method.
-
 ```tsx
 import { createElement, Fragment, Component } from "discord-tsx-factory";
 
@@ -287,7 +285,7 @@ class CustomMessage extends Component<Props, State> {
   public state: State = { page: 0 };
   public render() {
     // 'render' must return 'message' element if you want State.
-    // It's because 'discord-tsx-factory' doesn't support 'getDerivedStateFromProps' life cycle yet.
+    // It's because 'discord-tsx-factory' doesn't support state for non-message components yet.
     return (
       <message
         embeds={
@@ -322,10 +320,13 @@ class CustomMessage extends Component<Props, State> {
     );
   }
 }
-// 'sendState' returns [Discord.Message, (state: S) => void].
-const [message, setState] = await channel.sendState(
+const message = await channel.send(
   <CustomMessage contents={["page0", "page1"]} />
 );
+// If you want to call 'setState' out of component,
+const element = <CustomMessage contents={["page0", "page1"]} />;
+const message = await channel.send(element);
+element.setState(...);
 ```
 
 ## Message Life Cycle

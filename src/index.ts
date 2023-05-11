@@ -1,16 +1,10 @@
 import * as Discord from "discord.js";
 import { PartialOf } from "./utils";
 import { Wrapper, wrap } from "./wrapper";
+import { Listenable, ComponentLike } from "./mixins";
+import { InteractionType } from "./enums";
+import { StateSetter, Props, MessageContainer } from "./types";
 
-type StateSetter<S> = (
-  state: S,
-  interaction?: Discord.ButtonInteraction | Discord.SelectMenuInteraction
-) => void;
-type StateTuple<S> = [Discord.Message, StateSetter<S>];
-type PropsWithChildren<P = {}> = P & { children?: JSX.Element[] };
-interface Listenable {
-  readonly once?: boolean;
-}
 export class Listener implements Listenable {
   public readonly once?: boolean;
   public readonly listener: Function;
@@ -22,24 +16,17 @@ export class Listener implements Listenable {
   }
 }
 
-export enum InteractionType {
-  Button,
-  SelectMenu,
-  Modal,
-}
 export type DiscordFragment = Iterable<DiscordNode>;
 export type DiscordNode = string | number | DiscordFragment;
-export interface DiscordBaseElement<T extends keyof JSX.IntrinsicProps> {
+export interface DiscordBaseElement<T extends JSX.IntrinsicKeys> {
   readonly children?: JSX.ChildrenResolvable[T];
 }
-interface DiscordInternalElement<T extends keyof JSX.IntrinsicProps>
+interface DiscordInternalElement<T extends JSX.IntrinsicKeys>
   extends DiscordBaseElement<T> {
   _tag: T;
   readonly children: JSX.ChildrenResolvable[T];
 }
-export class Component<P = PropsWithChildren, S extends {} = {}> {
-  public readonly props: P;
-  public state: S;
+export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
   private _message?: Discord.Message;
   private deleteMessage?: Discord.Message["delete"];
   public set message(value: Discord.Message | undefined) {
@@ -54,18 +41,7 @@ export class Component<P = PropsWithChildren, S extends {} = {}> {
   public get message(): Discord.Message | undefined {
     return this._message;
   }
-  public constructor(props: Readonly<P> | P) {
-    this.props = props;
-    this.state = {} as S;
-  }
-  public componentDidMount?(): void | Promise<void>;
-  public componentDidUpdate?(prevState: Readonly<S>): void | Promise<void>;
-  public componentWillUnmount?(): void;
-  public componentDidCatch?(error: any): void;
-  public shouldComponentUpdate(nextState: Readonly<S>): boolean {
-    return true;
-  }
-  public render(): any {
+  public render(): JSX.Element {
     throw new Error("Your component doesn't have 'render' method.");
   }
   public setState: StateSetter<S> = (state, interaction) => {
@@ -91,9 +67,7 @@ export class Component<P = PropsWithChildren, S extends {} = {}> {
     if (rendered) this.message?.edit(rendered);
   }
 }
-function getSender(
-  target: Discord.BaseChannel | Discord.BaseInteraction | Discord.Message
-) {
+function getSender(target: MessageContainer) {
   if (target instanceof Discord.BaseChannel && target.isTextBased())
     return (rendered: any) => target.send(rendered);
   if (target instanceof Discord.BaseInteraction && target.isRepliable())
@@ -101,10 +75,7 @@ function getSender(
   if (target instanceof Discord.Message) return target.edit.bind(target);
   throw new Error("Failed to get sender from target.");
 }
-export function render(
-  element: unknown,
-  container: Discord.BaseChannel | Discord.BaseInteraction | Discord.Message
-) {
+export function render(element: unknown, container: MessageContainer) {
   if (element instanceof Component) {
     const rendered = renderAndCatch(element);
     if (rendered instanceof Error) throw rendered;
@@ -122,25 +93,26 @@ function renderAndCatch(component: Component<any, any>) {
   }
 }
 interface FunctionComponent<P = {}> {
-  (props: PropsWithChildren<P>): JSX.Element;
+  (props: Props<P, DiscordNode[]>): JSX.Element;
 }
 export type FC<P = {}> = FunctionComponent<P>;
 
 export type ButtonInteractionHandler = (
   interaction: Discord.ButtonInteraction,
   off: () => boolean
-) => any;
+) => void;
 export type SelectMenuInteractionHandler = (
   interaction: Discord.SelectMenuInteraction,
   off: () => boolean
-) => any;
+) => void;
 export type ModalSubmitInteractionHandler = (
   interaction: Discord.ModalSubmitInteraction
-) => any;
+) => void;
 
 declare global {
   namespace JSX {
     type Element = any;
+    type IntrinsicKeys = keyof JSX.IntrinsicProps;
     interface ChildrenResolvable {
       message: never;
       br: never;
@@ -160,9 +132,9 @@ declare global {
       br: {};
       embed: Omit<Discord.EmbedData, "color" | "footer" | "timestamp"> & {
         color?: Discord.ColorResolvable;
-        footer?: IntrinsicProps["footer"];
+        footer?: IntrinsicProps["footer"] | string;
       };
-      footer: PartialOf<Discord.EmbedFooterData, "text"> | string;
+      footer: PartialOf<Discord.EmbedFooterData, "text">;
       field: PartialOf<Discord.EmbedField, "value" | "inline">;
       emoji: {
         emoji: Discord.Emoji | Discord.EmojiResolvable;
@@ -189,11 +161,10 @@ declare global {
       input: Omit<Discord.TextInputComponentData, "type">;
     }
     type IntrinsicElements = {
-      [T in keyof JSX.IntrinsicProps]: DiscordBaseElement<T> &
-        JSX.IntrinsicProps[T];
+      [T in IntrinsicKeys]: DiscordBaseElement<T> & JSX.IntrinsicProps[T];
     };
     type IntrinsicInternalElements = {
-      [T in keyof JSX.IntrinsicProps]: DiscordInternalElement<T> &
+      [T in JSX.IntrinsicKeys]: DiscordInternalElement<T> &
         JSX.IntrinsicProps[T];
     };
   }
@@ -222,10 +193,7 @@ declare module "discord.js" {
 
 const interactionListeners = new Map<string, Listener>();
 function ElementBuilder(
-  props: Exclude<
-    JSX.IntrinsicInternalElements[keyof JSX.IntrinsicInternalElements],
-    string
-  >
+  props: JSX.IntrinsicInternalElements[JSX.IntrinsicKeys]
 ) {
   let element: JSX.Element | undefined;
   if (props && props._tag)
@@ -358,8 +326,11 @@ function ElementBuilder(
   return element; // return undefined if 'props' is not resolvable.
 }
 export function createElement(
-  tag: keyof JSX.IntrinsicProps | Function,
-  props: any,
+  tag: JSX.IntrinsicKeys | Function,
+  props: Props<
+    JSX.IntrinsicProps[JSX.IntrinsicKeys],
+    JSX.ChildrenResolvable[JSX.IntrinsicKeys]
+  >,
   ...children: any[]
 ): JSX.Element {
   if (!props || !props.children) props = { ...props, children };
@@ -377,9 +348,12 @@ export function createElement(
     }
     return tag(props);
   }
-  return ElementBuilder({ ...props, _tag: tag });
+  return ElementBuilder({
+    ...props,
+    _tag: tag,
+  } as JSX.IntrinsicInternalElements[typeof tag]);
 }
-export const Fragment = (props: PropsWithChildren): DiscordFragment =>
+export const Fragment = (props: Props<{}, DiscordNode[]>): DiscordFragment =>
   props.children || [];
 export const getListener = interactionListeners.get.bind(interactionListeners);
 export const setListener = interactionListeners.set.bind(interactionListeners);

@@ -276,3 +276,10 @@ wrap(Discord.VoiceChannel.prototype, "send", Wrapper);
 wrap(Discord.CommandInteraction.prototype, "reply", Wrapper);
 wrap(Discord.MessageComponentInteraction.prototype, "reply", Wrapper);
 wrap(Discord.ModalSubmitInteraction.prototype, "reply", Wrapper);
+
+wrap(Discord.CommandInteraction.prototype, "editReply", Wrapper);
+wrap(Discord.MessageComponentInteraction.prototype, "editReply", Wrapper);
+wrap(Discord.ModalSubmitInteraction.prototype, "editReply", Wrapper);
+
+wrap(Discord.CommandInteraction.prototype, "showModal", Wrapper);
+wrap(Discord.MessageComponentInteraction.prototype, "showModal", Wrapper);

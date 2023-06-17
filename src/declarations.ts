@@ -122,21 +122,41 @@ declare module "discord.js" {
       options: JSX.Element | JSX.IntrinsicProps["message"]
     ): Promise<Message<InGuild>>;
   }
+
+  type ElementMessageReplyOptions = JSX.ElementReplacer<
+    Discord.MessageReplyOptions,
+    "embeds" | "components"
+  > & {
+    fetchReply: true;
+  };
+  type ElementInteractionEditReplyOptions = JSX.ElementReplacer<
+    Discord.InteractionEditReplyOptions,
+    "embeds" | "components"
+  >;
   interface CommandInteraction<Cached extends CacheType = CacheType> {
     reply(
-      options: JSX.Element | JSX.IntrinsicProps["message"]
+      options: JSX.Element | ElementMessageReplyOptions
+    ): Promise<Message<BooleanCache<Cached>>>;
+    editReply(
+      options: JSX.Element | ElementInteractionEditReplyOptions
     ): Promise<Message<BooleanCache<Cached>>>;
     showModal(modal: JSX.Element): Promise<Message<BooleanCache<Cached>>>;
   }
   interface MessageComponentInteraction<Cached extends CacheType = CacheType> {
     reply(
-      options: JSX.Element | JSX.IntrinsicProps["message"]
+      options: JSX.Element | ElementMessageReplyOptions
+    ): Promise<Message<BooleanCache<Cached>>>;
+    editReply(
+      options: JSX.Element | ElementInteractionEditReplyOptions
     ): Promise<Message<BooleanCache<Cached>>>;
     showModal(modal: JSX.Element): Promise<Message<BooleanCache<Cached>>>;
   }
   interface ModalSubmitInteraction<Cached extends CacheType = CacheType> {
     reply(
-      options: JSX.Element | JSX.IntrinsicProps["message"]
+      options: JSX.Element | ElementMessageReplyOptions
+    ): Promise<Message<BooleanCache<Cached>>>;
+    editReply(
+      options: JSX.Element | ElementInteractionEditReplyOptions
     ): Promise<Message<BooleanCache<Cached>>>;
   }
 }

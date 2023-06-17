@@ -123,19 +123,17 @@ declare module "discord.js" {
     ): Promise<Message<InGuild>>;
   }
 
-  type ElementMessageReplyOptions = JSX.ElementReplacer<
-    Discord.MessageReplyOptions,
+  type ElementInteractionReplyOptions = JSX.ElementReplacer<
+    Discord.InteractionReplyOptions,
     "embeds" | "components"
-  > & {
-    fetchReply: true;
-  };
+  >;
   type ElementInteractionEditReplyOptions = JSX.ElementReplacer<
     Discord.InteractionEditReplyOptions,
     "embeds" | "components"
   >;
   interface CommandInteraction<Cached extends CacheType = CacheType> {
     reply(
-      options: JSX.Element | ElementMessageReplyOptions
+      options: JSX.Element | ElementInteractionReplyOptions
     ): Promise<Message<BooleanCache<Cached>>>;
     editReply(
       options: JSX.Element | ElementInteractionEditReplyOptions
@@ -144,7 +142,7 @@ declare module "discord.js" {
   }
   interface MessageComponentInteraction<Cached extends CacheType = CacheType> {
     reply(
-      options: JSX.Element | ElementMessageReplyOptions
+      options: JSX.Element | ElementInteractionReplyOptions
     ): Promise<Message<BooleanCache<Cached>>>;
     editReply(
       options: JSX.Element | ElementInteractionEditReplyOptions
@@ -153,7 +151,7 @@ declare module "discord.js" {
   }
   interface ModalSubmitInteraction<Cached extends CacheType = CacheType> {
     reply(
-      options: JSX.Element | ElementMessageReplyOptions
+      options: JSX.Element | ElementInteractionReplyOptions
     ): Promise<Message<BooleanCache<Cached>>>;
     editReply(
       options: JSX.Element | ElementInteractionEditReplyOptions

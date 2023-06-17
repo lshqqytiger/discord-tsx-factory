@@ -1,6 +1,15 @@
 export interface Listenable {
   readonly once?: boolean;
 }
+export interface HasChildren<Child> {
+  readonly children: Child[];
+}
+export interface HasInternalTag<
+  T extends JSX.IntrinsicKeys = JSX.IntrinsicKeys
+> {
+  _tag: T;
+}
+
 export abstract class ComponentLike<P, S> {
   public readonly props: P;
   public state: S;

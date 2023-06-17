@@ -5,18 +5,6 @@ import { PartialOf, ReplaceWith } from "./utils";
 import { HasChildren, HasInternalTag, Listenable } from "./mixins";
 
 declare global {
-  type ButtonInteractionHandler = (
-    interaction: Discord.ButtonInteraction,
-    off: () => boolean
-  ) => void;
-  type SelectMenuInteractionHandler = (
-    interaction: Discord.SelectMenuInteraction,
-    off: () => boolean
-  ) => void;
-  type ModalSubmitInteractionHandler = (
-    interaction: Discord.ModalSubmitInteraction
-  ) => void;
-
   namespace JSX {
     type Element = Rendered[IntrinsicKeys];
     type ElementReplacer<T, K extends keyof T> = ReplaceWith<
@@ -59,11 +47,11 @@ declare global {
       row: Partial<Discord.ActionRowComponentData>;
       button: Partial<Discord.ButtonComponent> & {
         emoji?: Discord.Emoji | string;
-        onClick?: ButtonInteractionHandler;
+        onClick?: Discord.ButtonInteractionHandler;
       } & Listenable;
       select: Omit<Discord.BaseSelectMenuComponentData, "type"> & {
         type?: Discord.SelectType;
-        onChange?: SelectMenuInteractionHandler;
+        onChange?: Discord.SelectMenuInteractionHandler;
         channelTypes?: Discord.ChannelType[];
       } & Listenable;
       option: Discord.SelectMenuComponentOptionData;
@@ -73,7 +61,7 @@ declare global {
           | Discord.ComponentType.TextInput;
         customId: string;
         title: string;
-        onSubmit?: ModalSubmitInteractionHandler;
+        onSubmit?: Discord.ModalSubmitInteractionHandler;
       } & Listenable;
       input: Omit<Discord.TextInputComponentData, "type">;
     }
@@ -118,6 +106,17 @@ declare module "discord.js" {
     | Discord.ComponentType.StringSelect
     | Discord.ComponentType.ChannelSelect
     | Discord.ComponentType.MentionableSelect;
+  export type ButtonInteractionHandler = (
+    interaction: Discord.ButtonInteraction,
+    off: () => boolean
+  ) => void;
+  export type SelectMenuInteractionHandler = (
+    interaction: Discord.SelectMenuInteraction,
+    off: () => boolean
+  ) => void;
+  export type ModalSubmitInteractionHandler = (
+    interaction: Discord.ModalSubmitInteraction
+  ) => void;
   interface PartialTextBasedChannelFields<InGuild extends boolean = boolean> {
     send(
       options: JSX.Element | JSX.IntrinsicProps["message"]

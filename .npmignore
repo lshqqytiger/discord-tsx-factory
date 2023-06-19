@@ -1,4 +1,5 @@
 .git*
+.vscode
 example
 test
 node_modules

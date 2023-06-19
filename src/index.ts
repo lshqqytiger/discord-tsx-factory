@@ -1,4 +1,5 @@
 import * as Discord from "discord.js";
+import assert from "assert";
 
 import "./declarations";
 import { getBuilder } from "./utils";
@@ -19,7 +20,7 @@ export class Listener implements Listenable {
 }
 
 export type DiscordFragment = Iterable<DiscordNode>;
-export type DiscordNode = string | number | DiscordFragment;
+export type DiscordNode = string | number | JSX.Element | DiscordFragment;
 export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
   private _message?: Discord.Message;
   private deleteMessage?: Discord.Message["delete"];
@@ -61,14 +62,14 @@ export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
 }
 function getSender(target: MessageContainer): Function {
   if (target instanceof Discord.BaseChannel && target.isTextBased())
-    return (rendered: any) => target.send(rendered);
+    return (rendered: JSX.Element) => target.send(rendered);
   if (target instanceof Discord.BaseInteraction && target.isRepliable())
     return target.reply.bind(target);
   if (target instanceof Discord.Message) return target.edit.bind(target);
   throw new Error("Failed to get sender from target.");
 }
 export function render(
-  element: unknown,
+  element: Component | JSX.Element,
   container: MessageContainer
 ): Promise<Discord.Message<boolean>> | undefined {
   if (element instanceof Component) {
@@ -76,7 +77,7 @@ export function render(
     if (rendered === undefined) return;
     return getSender(container)(rendered);
   }
-  return getSender(container)(element as any);
+  return getSender(container)(element);
 }
 function renderAndCatch(
   component: Component<any, any>
@@ -108,7 +109,11 @@ function ElementBuilder(
         props.description = "";
         if (props.children instanceof Array)
           for (const child of props.children.flat(Infinity))
-            if (typeof child === "object" && "name" in child)
+            if (
+              typeof child === "object" &&
+              "name" in child &&
+              "value" in child
+            )
               props.fields.push(child);
             else props.description += String(child);
         else props.description = String(props.children);
@@ -160,12 +165,11 @@ function ElementBuilder(
           (props.url ? Discord.ButtonStyle.Link : Discord.ButtonStyle.Primary)
       );
       if (props.onClick) {
-        if (!props.customId)
-          throw new Error(
-            "Button which has not url property must have a customId."
-          );
-        if (props.url)
-          throw new Error("You can't use both customId/onClick and url.");
+        assert(
+          props.customId,
+          "Button which has onClick property must have a customId."
+        );
+        assert(!props.url, "You can't use both customId/onClick and url.");
         interactionListeners.set(
           props.customId,
           new Listener(props.onClick, InteractionType.Button, props.once)
@@ -262,7 +266,7 @@ export class Client extends Discord.Client {
 }
 
 const Wrapper: Wrapper = (original) =>
-  function (this: any, options: any) {
+  function (this: MessageContainer, options: Component | unknown) {
     if (options instanceof Component) return render(options, this);
     return original.call(this, options);
   };

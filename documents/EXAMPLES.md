@@ -199,7 +199,7 @@ import {
 interface Props {
   customProp1: string;
   customProp2: string;
-  children?: DiscordNode;
+  children?: DiscordNode[];
 }
 class CustomEmbed extends Component<Props> {
   public render(): DiscordNode {
@@ -236,7 +236,7 @@ import { createElement, Fragment, DiscordNode, FC } from "discord-tsx-factory";
 interface Props {
   customProp1: string;
   customProp2: string;
-  children?: DiscordNode;
+  children?: DiscordNode[];
 }
 function CustomEmbed({
   customProp1,
@@ -284,8 +284,6 @@ interface State {
 class CustomMessage extends Component<Props, State> {
   public state: State = { page: 0 };
   public render() {
-    // 'render' must return 'message' element if you want State.
-    // It's because 'discord-tsx-factory' doesn't support state for non-message components yet.
     return (
       <message
         embeds={
@@ -323,10 +321,6 @@ class CustomMessage extends Component<Props, State> {
 const message = await channel.send(
   <CustomMessage contents={["page0", "page1"]} />
 );
-// If you want to call 'setState' out of component,
-const element = <CustomMessage contents={["page0", "page1"]} />;
-const message = await channel.send(element);
-element.setState(...);
 ```
 
 ## Message Life Cycle

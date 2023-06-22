@@ -1,16 +1,40 @@
 import * as Discord from "discord.js";
 
-import { DiscordNode } from "./index";
+import { DiscordNode, Component } from "./index";
 import { PartialOf, ReplaceWith } from "./utils";
 import { HasChildren, HasInternalTag, Listenable } from "./mixins";
 
 declare global {
+  type StateSetter<S> = (
+    state: Partial<S>,
+    interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction
+  ) => void;
+  type ComponentRenderer = () => DiscordNode;
+  type MessageContainer =
+    | Discord.BaseChannel
+    | Discord.BaseInteraction
+    | Discord.Message;
+  type _EmbedsResolvable = Array<
+    JSX.Element | Discord.APIEmbed | Discord.JSONEncodable<Discord.APIEmbed>
+  >;
+  type _ComponentsResolvable = Array<
+    | JSX.Element
+    | Discord.JSONEncodable<
+        Discord.APIActionRowComponent<Discord.APIMessageActionRowComponent>
+      >
+    | Discord.ActionRowData<
+        | Discord.MessageActionRowComponentData
+        | Discord.MessageActionRowComponentBuilder
+      >
+    | Discord.APIActionRowComponent<Discord.APIMessageActionRowComponent>
+  >;
+
   namespace JSX {
-    type Element = Rendered[IntrinsicKeys];
-    type ElementReplacer<T, K extends keyof T> = ReplaceWith<
+    type Element = Rendered[IntrinsicKeys] | Component;
+    type DiscordNodeReplacer<T, K extends keyof T> = ReplaceWith<
       T,
       K,
-      { [N in K]: Element | Element[] | T[N] }
+      { [N in K]: DiscordNode | DiscordNode[] | T[N] }
     >;
     type IntrinsicKeys = keyof IntrinsicProps;
     interface ChildResolvable {
@@ -30,9 +54,9 @@ declare global {
       input: never;
     }
     interface IntrinsicProps {
-      message: ElementReplacer<
+      message: DiscordNodeReplacer<
         Discord.BaseMessageOptions,
-        "embeds" | "components"
+        Discord.MessageSubElementKeys
       >;
       br: {};
       embed: Omit<Discord.EmbedData, "color" | "footer" | "timestamp"> & {
@@ -111,7 +135,7 @@ declare module "discord.js" {
     off: () => boolean
   ) => void;
   export type SelectMenuInteractionHandler = (
-    interaction: Discord.SelectMenuInteraction,
+    interaction: Discord.AnySelectMenuInteraction,
     off: () => boolean
   ) => void;
   export type ModalSubmitInteractionHandler = (
@@ -123,13 +147,18 @@ declare module "discord.js" {
     ): Promise<Message<InGuild>>;
   }
 
-  type ElementInteractionReplyOptions = JSX.ElementReplacer<
+  type MessageSubElementKeys = "embeds" | "components";
+  type ElementInteractionReplyOptions = JSX.DiscordNodeReplacer<
     Discord.InteractionReplyOptions,
-    "embeds" | "components"
+    MessageSubElementKeys
   >;
-  type ElementInteractionEditReplyOptions = JSX.ElementReplacer<
+  type ElementInteractionEditReplyOptions = JSX.DiscordNodeReplacer<
     Discord.InteractionEditReplyOptions,
-    "embeds" | "components"
+    MessageSubElementKeys
+  >;
+  type ElementInteractionUpdateOptions = JSX.DiscordNodeReplacer<
+    Discord.InteractionUpdateOptions,
+    MessageSubElementKeys
   >;
   interface CommandInteraction<Cached extends CacheType = CacheType> {
     reply(
@@ -148,6 +177,9 @@ declare module "discord.js" {
       options: JSX.Element | ElementInteractionEditReplyOptions
     ): Promise<Message<BooleanCache<Cached>>>;
     showModal(modal: JSX.Element): Promise<Message<BooleanCache<Cached>>>;
+    update(
+      options: ElementInteractionUpdateOptions
+    ): Promise<Message<BooleanCache<Cached>>>;
   }
   interface ModalSubmitInteraction<Cached extends CacheType = CacheType> {
     reply(

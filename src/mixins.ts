@@ -1,3 +1,5 @@
+import { DiscordNode } from ".";
+
 export interface Listenable {
   readonly once?: boolean;
 }
@@ -24,7 +26,7 @@ export abstract class ComponentLike<P, S> {
   public shouldComponentUpdate(nextState: Readonly<S>): boolean {
     return true;
   }
-  public abstract render(): JSX.Element;
+  public abstract render(): DiscordNode;
   public abstract setState: Function;
   public abstract forceUpdate(): void;
 }

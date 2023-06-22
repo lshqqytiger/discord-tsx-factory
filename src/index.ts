@@ -2,11 +2,11 @@ import * as Discord from "discord.js";
 import assert from "assert";
 
 import "./declarations";
-import { getBuilder } from "./utils";
-import { Wrapper, wrap } from "./wrapper";
+import { getSelectMenuBuilder } from "./utils";
 import { Listenable, ComponentLike, HasChildren } from "./mixins";
 import { InteractionType } from "./enums";
-import { StateSetter, MessageContainer } from "./types";
+import { VirtualDOM } from "./virtual-dom";
+import wrapDiscordJS from "./wrapper";
 
 export class Listener implements Listenable {
   public readonly once?: boolean;
@@ -22,24 +22,18 @@ export class Listener implements Listenable {
 export type DiscordFragment = Iterable<DiscordNode>;
 export type DiscordNode = string | number | JSX.Element | DiscordFragment;
 export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
-  private _message?: Discord.Message;
-  private deleteMessage?: Discord.Message["delete"];
-  public set message(value: Discord.Message | undefined) {
-    if (!value) return;
-    this._message = value;
-    this.deleteMessage = this._message.delete;
-    this._message.delete = async () => {
-      this.componentWillUnmount?.();
-      return await this.deleteMessage!.call(this._message);
-    };
+  private _virtualDOM?: VirtualDOM;
+  public get virtualDOM() {
+    return this._virtualDOM;
   }
-  public get message(): Discord.Message | undefined {
-    return this._message;
+  public bind(virtualDOM: VirtualDOM) {
+    this._virtualDOM = virtualDOM;
   }
-  public render(): JSX.Element {
+  public render(): DiscordNode {
     throw new Error("Your component doesn't have 'render' method.");
   }
-  public setState: StateSetter<S> = (state, interaction) => {
+  public setState: StateSetter<S> = async (state, interaction) => {
+    assert(this._virtualDOM);
     const prevState = { ...this.state };
     const shouldComponentUpdate = this.shouldComponentUpdate({
       ...this.state,
@@ -47,50 +41,17 @@ export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
     });
     Object.assign(this.state, state);
     if (shouldComponentUpdate) {
-      const rendered = renderAndCatch(this);
-      if (rendered === undefined) return;
-      if (interaction) interaction.update(rendered);
-      else this.message?.edit(rendered);
+      await this._virtualDOM.update(interaction);
       this.componentDidUpdate?.(prevState);
     }
   };
-  public forceUpdate() {
-    const rendered = renderAndCatch(this);
-    if (rendered === undefined) return;
-    if (rendered) this.message?.edit(rendered);
-  }
-}
-function getSender(target: MessageContainer): Function {
-  if (target instanceof Discord.BaseChannel && target.isTextBased())
-    return (rendered: JSX.Element) => target.send(rendered);
-  if (target instanceof Discord.BaseInteraction && target.isRepliable())
-    return target.reply.bind(target);
-  if (target instanceof Discord.Message) return target.edit.bind(target);
-  throw new Error("Failed to get sender from target.");
-}
-export function render(
-  element: Component | JSX.Element,
-  container: MessageContainer
-): Promise<Discord.Message<boolean>> | undefined {
-  if (element instanceof Component) {
-    const rendered = renderAndCatch(element);
-    if (rendered === undefined) return;
-    return getSender(container)(rendered);
-  }
-  return getSender(container)(element);
-}
-function renderAndCatch(
-  component: Component<any, any>
-): JSX.Rendered["message"] | undefined {
-  try {
-    return component.render() as JSX.Rendered["message"];
-  } catch (e) {
-    if (component.componentDidCatch) component.componentDidCatch(e);
-    else throw e;
+  public async forceUpdate() {
+    assert(this._virtualDOM);
+    return await this._virtualDOM.update();
   }
 }
 interface FunctionComponent<P = {}> {
-  (props: P & HasChildren<DiscordNode[]>): JSX.Element;
+  (props: P & HasChildren<DiscordNode[]>): DiscordNode;
 }
 export type FC<P = {}> = FunctionComponent<P>;
 
@@ -108,14 +69,16 @@ function ElementBuilder(
       if (!props.description) {
         props.description = "";
         if (props.children instanceof Array)
-          for (const child of props.children.flat(Infinity))
+          for (const child of props.children.flat(Infinity)) {
+            const field = child instanceof Component ? child.render() : child;
             if (
-              typeof child === "object" &&
-              "name" in child &&
-              "value" in child
+              typeof field === "object" &&
+              "name" in field &&
+              "value" in field
             )
-              props.fields.push(child);
+              props.fields.push(field);
             else props.description += String(child);
+          }
         else props.description = String(props.children);
       }
       return new Discord.EmbedBuilder({
@@ -184,7 +147,7 @@ function ElementBuilder(
           props.customId,
           new Listener(props.onChange, InteractionType.SelectMenu, props.once)
         );
-      const $ = new (getBuilder(props.type))({
+      const $ = new (getSelectMenuBuilder(props.type))({
         ...props,
         type: undefined,
       });
@@ -211,7 +174,7 @@ function ElementBuilder(
   // returns undefined if 'props' is not resolvable.
 }
 export function createElement<T extends JSX.IntrinsicKeys>(
-  tag: T | Function,
+  tag: T | Component | Function,
   props: JSX.IntrinsicElement<T>,
   ...children: JSX.ChildResolvable[T][]
 ): JSX.Element | Component | undefined {
@@ -220,8 +183,12 @@ export function createElement<T extends JSX.IntrinsicKeys>(
     if (
       tag.prototype && // filter arrow function
       "render" in tag.prototype // renderable component
-    )
-      return Reflect.construct(tag, [props]);
+    ) {
+      const rendered = Reflect.construct(tag, [props]);
+      if (rendered instanceof Component && VirtualDOM.instance !== null)
+        rendered.bind(VirtualDOM.instance);
+      return rendered;
+    }
     return tag(props);
   }
   return ElementBuilder({
@@ -265,25 +232,4 @@ export class Client extends Discord.Client {
   }
 }
 
-const Wrapper: Wrapper = (original) =>
-  function (this: MessageContainer, options: Component | unknown) {
-    if (options instanceof Component) return render(options, this);
-    return original.call(this, options);
-  };
-
-wrap(Discord.TextChannel.prototype, "send", Wrapper);
-wrap(Discord.DMChannel.prototype, "send", Wrapper);
-wrap(Discord.NewsChannel.prototype, "send", Wrapper);
-wrap(Discord.StageChannel.prototype, "send", Wrapper);
-wrap(Discord.VoiceChannel.prototype, "send", Wrapper);
-
-wrap(Discord.CommandInteraction.prototype, "reply", Wrapper);
-wrap(Discord.MessageComponentInteraction.prototype, "reply", Wrapper);
-wrap(Discord.ModalSubmitInteraction.prototype, "reply", Wrapper);
-
-wrap(Discord.CommandInteraction.prototype, "editReply", Wrapper);
-wrap(Discord.MessageComponentInteraction.prototype, "editReply", Wrapper);
-wrap(Discord.ModalSubmitInteraction.prototype, "editReply", Wrapper);
-
-wrap(Discord.CommandInteraction.prototype, "showModal", Wrapper);
-wrap(Discord.MessageComponentInteraction.prototype, "showModal", Wrapper);
+wrapDiscordJS();

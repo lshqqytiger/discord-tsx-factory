@@ -1,26 +1,16 @@
 import * as Discord from "discord.js";
-import assert from "assert";
+import assert, { AssertionError } from "assert";
 
 import "./declarations";
+import { Listener } from "./interaction-listener";
 import { getSelectMenuBuilder } from "./utils";
-import { Listenable, ComponentLike, HasChildren } from "./mixins";
+import { ComponentLike, HasChildren } from "./mixins";
 import { InteractionType } from "./enums";
 import { VirtualDOM } from "./virtual-dom";
+import { FCVirtualDOM, FunctionComponent } from "./function-component";
 import wrapDiscordJS from "./wrapper";
 
-export class Listener implements Listenable {
-  public readonly once?: boolean;
-  public readonly listener: Function;
-  public readonly type: InteractionType;
-  constructor(listener: Function, type: InteractionType, once?: boolean) {
-    this.listener = listener;
-    this.type = type;
-    this.once = once;
-  }
-}
-
 export type DiscordFragment = Iterable<DiscordNode>;
-export type DiscordNode = string | number | JSX.Element | DiscordFragment;
 export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
   private _virtualDOM?: VirtualDOM;
   public get virtualDOM() {
@@ -50,15 +40,11 @@ export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
     return await this._virtualDOM.update();
   }
 }
-interface FunctionComponent<P = {}> {
-  (props: P & HasChildren<DiscordNode[]>): DiscordNode;
-}
 export type FC<P = {}> = FunctionComponent<P>;
 
-const interactionListeners = new Map<string, Listener>();
 function ElementBuilder(
   props: JSX.IntrinsicInternalElements[JSX.IntrinsicKeys]
-): JSX.Element | undefined {
+): DiscordNode | undefined {
   switch (props._tag) {
     case "message":
       return props as JSX.Rendered["message"];
@@ -133,7 +119,7 @@ function ElementBuilder(
           "Button which has onClick property must have a customId."
         );
         assert(!props.url, "You can't use both customId/onClick and url.");
-        interactionListeners.set(
+        Listener.listeners.set(
           props.customId,
           new Listener(props.onClick, InteractionType.Button, props.once)
         );
@@ -143,7 +129,7 @@ function ElementBuilder(
     }
     case "select": {
       if (props.onChange && props.customId)
-        interactionListeners.set(
+        Listener.listeners.set(
           props.customId,
           new Listener(props.onChange, InteractionType.SelectMenu, props.once)
         );
@@ -159,7 +145,7 @@ function ElementBuilder(
       return props; // to be internally wrapped later.
     case "modal":
       if (props.onSubmit)
-        interactionListeners.set(
+        Listener.listeners.set(
           props.customId,
           new Listener(props.onSubmit, InteractionType.Modal, props.once)
         );
@@ -174,10 +160,10 @@ function ElementBuilder(
   // returns undefined if 'props' is not resolvable.
 }
 export function createElement<T extends JSX.IntrinsicKeys>(
-  tag: T | Component | Function,
+  tag: T | typeof Component | FunctionComponent<JSX.IntrinsicElement<T>>,
   props: JSX.IntrinsicElement<T>,
   ...children: JSX.ChildResolvable[T][]
-): JSX.Element | Component | undefined {
+): DiscordNode | Component | undefined {
   if (!props || !props.children) props = { ...props, children };
   if (typeof tag === "function") {
     if (
@@ -189,19 +175,33 @@ export function createElement<T extends JSX.IntrinsicKeys>(
         rendered.bind(VirtualDOM.instance);
       return rendered;
     }
-    return tag(props);
+    if (tag === Fragment) return tag(props);
+    try {
+      tag = tag as FunctionComponent<JSX.IntrinsicElement<T>>; // assert
+      const virtualDOM = new FCVirtualDOM(tag, props);
+      VirtualDOM.instance = virtualDOM;
+      const rendered = tag(props);
+      virtualDOM.initialize();
+      return rendered;
+    } catch (e) {
+      VirtualDOM.instance = null;
+      throw new AssertionError({
+        message: `INTERNAL ASSERTION FAILED! ${tag.name} should extend Component or be a FunctionComponent.`,
+      });
+    }
   }
   return ElementBuilder({
     ...props,
     _tag: tag,
-  } as JSX.IntrinsicInternalElements[JSX.IntrinsicKeys]);
+  } as JSX.IntrinsicInternalElements[T]);
 }
-export const Fragment = (props: HasChildren<DiscordNode[]>): DiscordFragment =>
+export const Fragment = (props: HasChildren<DiscordNode>): DiscordFragment =>
   props.children || [];
-export const getListener = interactionListeners.get.bind(interactionListeners);
-export const setListener = interactionListeners.set.bind(interactionListeners);
-export const deleteListener =
-  interactionListeners.delete.bind(interactionListeners);
+export const getListener = Listener.listeners.get.bind(Listener.listeners);
+export const setListener = Listener.listeners.set.bind(Listener.listeners);
+export const deleteListener = Listener.listeners.delete.bind(
+  Listener.listeners
+);
 
 export class Client extends Discord.Client {
   private _once: InteractionType[] = [InteractionType.Modal];
@@ -209,19 +209,17 @@ export class Client extends Discord.Client {
     interaction: Discord.Interaction
   ) => {
     if ("customId" in interaction) {
-      const interactionListener = interactionListeners.get(
-        interaction.customId
-      );
+      const interactionListener = Listener.listeners.get(interaction.customId);
       if (!interactionListener) return;
       interactionListener.listener(interaction, () =>
-        interactionListeners.delete(interaction.customId)
+        Listener.listeners.delete(interaction.customId)
       );
       if (
         (this._once.includes(interactionListener.type) &&
           interactionListener.once !== false) ||
         interactionListener.once
       )
-        interactionListeners.delete(interaction.customId);
+        Listener.listeners.delete(interaction.customId);
     }
   };
   constructor(options: Discord.ClientOptions & { once?: InteractionType[] }) {
@@ -231,5 +229,8 @@ export class Client extends Discord.Client {
     if (options.once) this._once = [...this._once, ...options.once];
   }
 }
+
+export { DiscordNode };
+export * from "./hooks";
 
 wrapDiscordJS();

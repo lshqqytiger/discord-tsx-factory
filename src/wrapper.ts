@@ -1,8 +1,9 @@
 import * as Discord from "discord.js";
 import assert from "assert";
 
-import { Component, DiscordNode } from ".";
-import { VirtualDOM, IncompleteVirtualDOM } from "./virtual-dom";
+import { Component } from ".";
+import { VirtualDOM, MessageVirtualDOM } from "./virtual-dom";
+import { FCVirtualDOM } from "./function-component";
 
 type Wrapper = (original: Function) => Function;
 function wrap<T extends string>(
@@ -14,6 +15,21 @@ function wrap<T extends string>(
   prototype[method] = wrapper(_method);
 }
 
+type EmbedsResolvable = Array<
+  JSX.Element | Discord.APIEmbed | Discord.JSONEncodable<Discord.APIEmbed>
+>;
+type ComponentsResolvable = Array<
+  | JSX.Element
+  | Discord.JSONEncodable<
+      Discord.APIActionRowComponent<Discord.APIMessageActionRowComponent>
+    >
+  | Discord.ActionRowData<
+      | Discord.MessageActionRowComponentData
+      | Discord.MessageActionRowComponentBuilder
+    >
+  | Discord.APIActionRowComponent<Discord.APIMessageActionRowComponent>
+>;
+
 const Wrapper: Wrapper = (original) =>
   async function (
     this: MessageContainer,
@@ -21,7 +37,7 @@ const Wrapper: Wrapper = (original) =>
   ) {
     if (typeof options === "object") {
       if (options instanceof Component) {
-        VirtualDOM.instance = options.virtualDOM || new VirtualDOM();
+        VirtualDOM.instance = options.virtualDOM || new MessageVirtualDOM();
         VirtualDOM.instance.topLevelRenderer = options.render.bind(options);
         if (options.virtualDOM === undefined) options.bind(VirtualDOM.instance);
         const rendered = await VirtualDOM.instance.renderAsMessage(this);
@@ -30,9 +46,9 @@ const Wrapper: Wrapper = (original) =>
       }
       if ("embeds" in options && options.embeds !== undefined) {
         assert(Array.isArray(options.embeds));
-        const virtualDOM = new IncompleteVirtualDOM();
+        const virtualDOM = new VirtualDOM();
         virtualDOM.topLevelRenderer = () =>
-          (options.embeds as _EmbedsResolvable).map((embed) => {
+          (options.embeds as EmbedsResolvable).map((embed) => {
             if (embed instanceof Component) return embed.render();
             return embed as DiscordNode;
           });
@@ -49,9 +65,9 @@ const Wrapper: Wrapper = (original) =>
       }
       if ("components" in options && options.components !== undefined) {
         assert(Array.isArray(options.components));
-        const virtualDOM = new IncompleteVirtualDOM();
+        const virtualDOM = new VirtualDOM();
         virtualDOM.topLevelRenderer = () =>
-          (options.components as _ComponentsResolvable).map((component) => {
+          (options.components as ComponentsResolvable).map((component) => {
             if (component instanceof Component) return component.render();
             return component as DiscordNode;
           });
@@ -67,6 +83,8 @@ const Wrapper: Wrapper = (original) =>
         });
       }
     }
+    if (VirtualDOM.instance instanceof FCVirtualDOM)
+      return await VirtualDOM.instance.renderAsMessage(this);
     return await original.call(this, options);
   };
 const ShowModalWrapper: Wrapper = (original) =>
@@ -75,13 +93,15 @@ const ShowModalWrapper: Wrapper = (original) =>
     options: JSX.Element
   ) {
     if (options instanceof Component) {
-      VirtualDOM.instance = options.virtualDOM || new IncompleteVirtualDOM();
+      VirtualDOM.instance = options.virtualDOM || new VirtualDOM();
       VirtualDOM.instance.topLevelRenderer = options.render.bind(options);
       if (options.virtualDOM === undefined) options.bind(VirtualDOM.instance);
       const rendered = VirtualDOM.instance.render();
       VirtualDOM.instance = null;
       return rendered;
     }
+    if (VirtualDOM.instance instanceof FCVirtualDOM)
+      return VirtualDOM.instance.render();
     return await original.call(this, options);
   };
 const ComponentBuilderToJSONWrapper: Wrapper = (original) =>

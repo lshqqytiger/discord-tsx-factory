@@ -1,10 +1,11 @@
 import * as Discord from "discord.js";
 
-import { DiscordNode, Component } from "./index";
+import { Component, DiscordFragment } from "./index";
 import { PartialOf, ReplaceWith } from "./utils";
 import { HasChildren, HasInternalTag, Listenable } from "./mixins";
 
 declare global {
+  type DiscordNode = JSX.Element;
   type StateSetter<S> = (
     state: Partial<S>,
     interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction
@@ -14,23 +15,9 @@ declare global {
     | Discord.BaseChannel
     | Discord.BaseInteraction
     | Discord.Message;
-  type _EmbedsResolvable = Array<
-    JSX.Element | Discord.APIEmbed | Discord.JSONEncodable<Discord.APIEmbed>
-  >;
-  type _ComponentsResolvable = Array<
-    | JSX.Element
-    | Discord.JSONEncodable<
-        Discord.APIActionRowComponent<Discord.APIMessageActionRowComponent>
-      >
-    | Discord.ActionRowData<
-        | Discord.MessageActionRowComponentData
-        | Discord.MessageActionRowComponentBuilder
-      >
-    | Discord.APIActionRowComponent<Discord.APIMessageActionRowComponent>
-  >;
 
   namespace JSX {
-    type Element = Rendered[IntrinsicKeys] | Component;
+    type Element = Rendered[IntrinsicKeys] | Component | DiscordFragment;
     type DiscordNodeReplacer<T, K extends keyof T> = ReplaceWith<
       T,
       K,

@@ -1,5 +1,3 @@
-import { DiscordNode } from ".";
-
 export interface Listenable {
   readonly once?: boolean;
 }

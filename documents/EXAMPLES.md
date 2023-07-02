@@ -273,7 +273,12 @@ channel.send({
 ## State
 
 ```tsx
-import { createElement, Fragment, Component } from "discord-tsx-factory";
+import {
+  createElement,
+  Fragment,
+  Component,
+  DiscordNode,
+} from "discord-tsx-factory";
 
 interface Props {
   contents: string[];
@@ -283,7 +288,7 @@ interface State {
 }
 class CustomMessage extends Component<Props, State> {
   public state: State = { page: 0 };
-  public render() {
+  public render(): DiscordNode {
     return (
       <message
         embeds={
@@ -317,6 +322,56 @@ class CustomMessage extends Component<Props, State> {
       />
     );
   }
+}
+const message = await channel.send(
+  <CustomMessage contents={["page0", "page1"]} />
+);
+```
+
+```tsx
+import {
+  createElement,
+  Fragment,
+  useState,
+  DiscordNode,
+} from "discord-tsx-factory";
+
+interface Props {
+  contents: string[];
+}
+function CustomMessage({ contents }: Props): DiscordNode {
+  const [page, setPage] = useState(0);
+
+  return (
+    <message
+      embeds={
+        <>
+          <embed>{contents[page]}</embed>
+        </>
+      }
+      components={
+        <>
+          <row>
+            <button
+              customId="button_prev"
+              onClick={(interaction) =>
+                // interaction is not essential, but it calls interaction.update instead of message.edit.
+                setPage(page - 1, interaction)
+              }
+            >
+              prev
+            </button>
+            <button
+              customId="button_next"
+              onClick={async (interaction) => setPage(page + 1, interaction)}
+            >
+              next
+            </button>
+          </row>
+        </>
+      }
+    />
+  );
 }
 const message = await channel.send(
   <CustomMessage contents={["page0", "page1"]} />

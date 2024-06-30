@@ -6,6 +6,7 @@ export class Listener implements Listenable {
   public readonly once?: boolean;
   public readonly listener: Function;
   public readonly type: InteractionType;
+
   constructor(listener: Function, type: InteractionType, once?: boolean) {
     this.listener = listener;
     this.type = type;

@@ -16,3 +16,15 @@ export function getSelectMenuBuilder(type?: Discord.SelectType) {
   }
   return Discord.StringSelectMenuBuilder;
 }
+export function getNativeRenderer($: MessageContainer): Function {
+  if ($ instanceof Discord.BaseChannel && $.isTextBased()) {
+    return $.send.bind($);
+  }
+  if ($ instanceof Discord.BaseInteraction && $.isRepliable()) {
+    return ("update" in $ ? $.update : $.reply).bind($);
+  }
+  if ($ instanceof Discord.Message) {
+    return $.edit.bind($);
+  }
+  throw new Error("Failed to get sender from target.");
+}

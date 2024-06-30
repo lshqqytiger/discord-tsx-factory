@@ -66,7 +66,7 @@ declare global {
         channelTypes?: Discord.ChannelType[];
       } & Listenable;
       option: Discord.SelectMenuComponentOptionData;
-      modal: Omit<Discord.ModalData, "type" | "components"> & {
+      modal: Omit<Discord.ModalComponentData, "type" | "components"> & {
         type?:
           | Discord.ComponentType.ActionRow
           | Discord.ComponentType.TextInput;

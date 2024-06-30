@@ -6,24 +6,24 @@ import { Listener } from "./interaction-listener";
 import { getSelectMenuBuilder } from "./utils";
 import { ComponentLike, HasChildren } from "./mixins";
 import { InteractionType } from "./enums";
-import { VirtualDOM } from "./virtual-dom";
-import { FCVirtualDOM, FunctionComponent } from "./function-component";
+import { Node } from "./node";
+import { FCNode, FunctionComponent } from "./function-component";
 import wrapDiscordJS from "./wrapper";
 
 export type DiscordFragment = Iterable<DiscordNode>;
 export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
-  private _virtualDOM?: VirtualDOM;
-  public get virtualDOM() {
-    return this._virtualDOM;
+  private _node?: Node;
+  public get node() {
+    return this._node;
   }
-  public bind(virtualDOM: VirtualDOM) {
-    this._virtualDOM = virtualDOM;
+  public bind(node: Node) {
+    this._node = node;
   }
   public render(): DiscordNode {
     throw new Error("Your component doesn't have 'render' method.");
   }
   public setState: StateSetter<S> = async (state, interaction) => {
-    assert(this._virtualDOM);
+    assert(this._node);
     const prevState = { ...this.state };
     const shouldComponentUpdate = this.shouldComponentUpdate({
       ...this.state,
@@ -31,13 +31,13 @@ export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
     });
     Object.assign(this.state, state);
     if (shouldComponentUpdate) {
-      await this._virtualDOM.update(interaction);
+      await this._node.update(interaction);
       this.componentDidUpdate?.(prevState);
     }
   };
   public async forceUpdate() {
-    assert(this._virtualDOM);
-    return await this._virtualDOM.update();
+    assert(this._node);
+    return await this._node.update();
   }
 }
 export type FC<P = {}> = FunctionComponent<P>;
@@ -52,21 +52,24 @@ function ElementBuilder(
       return "\n";
     case "embed":
       props.fields = [];
-      if (!props.description) {
+
+      if (props.description === undefined) {
         props.description = "";
-        if (props.children instanceof Array)
-          for (const child of props.children.flat(Infinity)) {
-            const field = child instanceof Component ? child.render() : child;
-            if (
-              typeof field === "object" &&
-              "name" in field &&
-              "value" in field
-            )
-              props.fields.push(field);
-            else props.description += String(child);
+
+        for (const child of props.children.flat(Infinity)) {
+          const field = child instanceof Component ? child.render() : child;
+          if (
+            typeof field === "object" &&
+            "name" in field &&
+            "value" in field
+          ) {
+            props.fields = [...props.fields, field];
+          } else {
+            props.description += child.toString();
           }
-        else props.description = String(props.children);
+        }
       }
+
       return new Discord.EmbedBuilder({
         ...props,
         footer:
@@ -124,31 +127,36 @@ function ElementBuilder(
           new Listener(props.onClick, InteractionType.Button, props.once)
         );
       }
-      if (props.url) $.setURL(props.url);
+      if (props.url) {
+        $.setURL(props.url);
+      }
       return $;
     }
     case "select": {
-      if (props.onChange && props.customId)
+      if (props.onChange && props.customId) {
         Listener.listeners.set(
           props.customId,
           new Listener(props.onChange, InteractionType.SelectMenu, props.once)
         );
+      }
       const $ = new (getSelectMenuBuilder(props.type))({
         ...props,
         type: undefined,
       });
-      if ($ instanceof Discord.StringSelectMenuBuilder)
+      if ($ instanceof Discord.StringSelectMenuBuilder) {
         $.setOptions(...props.children);
+      }
       return $;
     }
     case "option":
       return props; // to be internally wrapped later.
     case "modal":
-      if (props.onSubmit)
+      if (props.onSubmit) {
         Listener.listeners.set(
           props.customId,
           new Listener(props.onSubmit, InteractionType.Modal, props.once)
         );
+      }
       return new Discord.ModalBuilder({
         customId: props.customId,
         title: props.title,
@@ -164,27 +172,32 @@ export function createElement<T extends JSX.IntrinsicKeys>(
   props: JSX.IntrinsicElement<T>,
   ...children: JSX.ChildResolvable[T][]
 ): DiscordNode | Component | undefined {
-  if (!props || !props.children) props = { ...props, children };
+  if (!props || !props.children) {
+    props = { ...props, children };
+  }
   if (typeof tag === "function") {
     if (
       tag.prototype && // filter arrow function
       "render" in tag.prototype // renderable component
     ) {
       const rendered = Reflect.construct(tag, [props]);
-      if (rendered instanceof Component && VirtualDOM.instance !== null)
-        rendered.bind(VirtualDOM.instance);
+      if (rendered instanceof Component && Node.instance !== null) {
+        rendered.bind(Node.instance);
+      }
       return rendered;
     }
-    if (tag === Fragment) return tag(props);
+    if (tag === Fragment) {
+      return tag(props);
+    }
     try {
       tag = tag as FunctionComponent<JSX.IntrinsicElement<T>>; // assert
-      const virtualDOM = new FCVirtualDOM(tag, props);
-      VirtualDOM.instance = virtualDOM;
+      const node = new FCNode(tag, props);
+      Node.instance = node;
       const rendered = tag(props);
-      virtualDOM.initialize();
+      node.initialize();
       return rendered;
     } catch (e) {
-      VirtualDOM.instance = null;
+      Node.instance = null;
       throw new AssertionError({
         message: `INTERNAL ASSERTION FAILED! ${tag.name} should extend Component or be a FunctionComponent.`,
       });
@@ -210,7 +223,10 @@ export class Client extends Discord.Client {
   ) => {
     if ("customId" in interaction) {
       const interactionListener = Listener.listeners.get(interaction.customId);
-      if (!interactionListener) return;
+      if (!interactionListener) {
+        return;
+      }
+
       interactionListener.listener(interaction, () =>
         Listener.listeners.delete(interaction.customId)
       );
@@ -218,15 +234,19 @@ export class Client extends Discord.Client {
         (this._once.includes(interactionListener.type) &&
           interactionListener.once !== false) ||
         interactionListener.once
-      )
+      ) {
         Listener.listeners.delete(interaction.customId);
+      }
     }
   };
+
   constructor(options: Discord.ClientOptions & { once?: InteractionType[] }) {
     super(options);
 
     this.on("interactionCreate", this.defaultInteractionCreateListener);
-    if (options.once) this._once = [...this._once, ...options.once];
+    if (options.once) {
+      this._once = [...this._once, ...options.once];
+    }
   }
 }
 

@@ -1,18 +1,12 @@
 import * as Discord from "discord.js";
 import assert from "assert";
 
-export function getNativeRenderer($: MessageContainer): Function {
-  if ($ instanceof Discord.BaseChannel && $.isTextBased())
-    return $.send.bind($);
-  if ($ instanceof Discord.BaseInteraction && $.isRepliable())
-    return ("update" in $ ? $.update : $.reply).bind($);
-  if ($ instanceof Discord.Message) return $.edit.bind($);
-  throw new Error("Failed to get sender from target.");
-}
+import { getNativeRenderer } from "./utils";
 
-export class VirtualDOM {
-  public static instance: VirtualDOM | null = null;
+export class Node {
+  public static instance: Node | null = null;
   protected message?: Discord.Message = undefined; // non-message VirtualDOM cannot be sent.
+
   public topLevelRenderer?: ComponentRenderer;
   public async renderAsMessage(
     container: MessageContainer
@@ -29,8 +23,9 @@ export class VirtualDOM {
     throw new Error("Cannot update a message of non-message virtual DOM.");
   }
 }
-export class MessageVirtualDOM extends VirtualDOM {
+export class MessageNode extends Node {
   protected message?: Discord.Message;
+
   public topLevelRenderer?: ComponentRenderer;
   public async renderAsMessage(
     container: MessageContainer

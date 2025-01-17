@@ -208,8 +208,9 @@ export function createElement<T extends JSX.IntrinsicKeys>(
     _tag: tag,
   } as JSX.IntrinsicInternalElements[T]);
 }
-export const Fragment = (props: HasChildren<DiscordNode>): DiscordFragment =>
-  props.children || [];
+export const Fragment = (
+  props: Partial<HasChildren<DiscordNode>>
+): DiscordFragment => props.children || [];
 export const getListener = Listener.listeners.get.bind(Listener.listeners);
 export const setListener = Listener.listeners.set.bind(Listener.listeners);
 export const deleteListener = Listener.listeners.delete.bind(

@@ -20,11 +20,12 @@
   },
   "homepage": "https://github.com/lshqqytiger/discord-tsx-factory#readme",
   "devDependencies": {
-    "@types/node": "^20.14.9",
-    "discord.js": "^14.15.3",
-    "typescript": "^5.5.2"
+    "@tsconfig/node22": "^22.0.0",
+    "@types/node": "^22.10.7",
+    "discord.js": "^14.17.3",
+    "typescript": "^5.7.3"
   },
   "peerDependencies": {
-    "discord.js": "14.15.0 - 14.15.3"
+    "discord.js": "14.17.0 - 14.17.3"
   }
 }

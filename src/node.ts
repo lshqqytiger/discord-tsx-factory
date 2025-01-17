@@ -24,9 +24,6 @@ export class Node {
   }
 }
 export class MessageNode extends Node {
-  protected message?: Discord.Message;
-
-  public topLevelRenderer?: ComponentRenderer;
   public async renderAsMessage(
     container: MessageContainer
   ): Promise<Discord.Message> {

@@ -17,7 +17,7 @@ export function getSelectMenuBuilder(type?: Discord.SelectType) {
   return Discord.StringSelectMenuBuilder;
 }
 export function getNativeRenderer($: MessageContainer): Function {
-  if ($ instanceof Discord.BaseChannel && $.isTextBased()) {
+  if ($ instanceof Discord.BaseChannel && $.isSendable()) {
     return $.send.bind($);
   }
   if ($ instanceof Discord.BaseInteraction && $.isRepliable()) {

@@ -32,7 +32,6 @@ export class FCState<T> {
   };
 }
 export class FCNode<P> extends Node {
-  protected message?: Discord.Message;
   public isInitialized: boolean = false;
   public topLevelRenderer = undefined;
   private fc: FunctionComponent<P>;

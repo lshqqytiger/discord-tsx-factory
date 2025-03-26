@@ -21,7 +21,7 @@ export function getNativeRenderer($: MessageContainer): Function {
     return $.send.bind($);
   }
   if ($ instanceof Discord.BaseInteraction && $.isRepliable()) {
-    return ("update" in $ ? $.update : $.reply).bind($);
+    return ("update" in $ ? $.deleteReply : $.reply).bind($);
   }
   if ($ instanceof Discord.Message) {
     return $.edit.bind($);

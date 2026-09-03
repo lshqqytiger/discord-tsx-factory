@@ -22,13 +22,13 @@ type EmbedsResolvable = Array<
 type ComponentsResolvable = Array<
   | JSX.Element
   | Discord.JSONEncodable<
-      Discord.APIActionRowComponent<Discord.APIMessageActionRowComponent>
+      Discord.APIActionRowComponent<Discord.APIComponentInMessageActionRow>
     >
   | Discord.ActionRowData<
       | Discord.MessageActionRowComponentData
       | Discord.MessageActionRowComponentBuilder
     >
-  | Discord.APIActionRowComponent<Discord.APIMessageActionRowComponent>
+  | Discord.APIActionRowComponent<Discord.APIComponentInMessageActionRow>
 >;
 
 const Wrapper: Wrapper = (original) =>

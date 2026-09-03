@@ -17,7 +17,7 @@ discord.js builders, message options, or component instances.
 
 ## Current compatibility
 
-The package declares compatibility with discord.js `14.17.0 - 14.18.0` in
+The package declares compatibility with discord.js `14.27.0` in
 `package.json`. The README and examples describe the intended API, while the
 source files are the authority when behavior differs from those examples.
 

@@ -3,13 +3,22 @@ import * as Discord from "discord.js";
 import { InteractionType } from "./enums";
 import { Listenable } from "./mixins";
 
+export type ListenerCallback = (
+  interaction: Discord.Interaction,
+  off: () => boolean,
+) => void | Promise<void>;
+
 export class Listener implements Listenable {
   public static readonly listeners = new Map<string, Listener>();
   public readonly once?: boolean;
-  public readonly listener: Function;
+  public readonly listener: ListenerCallback;
   public readonly type: InteractionType;
 
-  constructor(listener: Function, type: InteractionType, once?: boolean) {
+  constructor(
+    listener: ListenerCallback,
+    type: InteractionType,
+    once?: boolean,
+  ) {
     this.listener = listener;
     this.type = type;
     this.once = once;
@@ -25,6 +34,8 @@ export class Listener implements Listenable {
         );
       case InteractionType.Modal:
         return "isModalSubmit" in interaction && interaction.isModalSubmit();
+      default:
+        return false;
     }
   }
 }

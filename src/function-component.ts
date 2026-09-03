@@ -13,7 +13,7 @@ export type FCStateSetter<S> = (
 ) => Promise<void>;
 export class FCState<T> {
   private _state: T;
-  private readonly node: FCNode<any>;
+  private readonly node: FCNode<unknown>;
 
   public get state() {
     return this._state;
@@ -63,10 +63,12 @@ export class FCNode<P> extends Node {
   public async renderAsMessage(
     container: MessageContainer,
   ): Promise<Discord.Message> {
-    const rendered = this.render();
-    Node.instance = null;
-    this.stateId = 0;
-    return (this.message = await getNativeRenderer(container)(rendered));
+    try {
+      return (this.message = await getNativeRenderer(container)(this.render()));
+    } finally {
+      Node.instance = null;
+      this.stateId = 0;
+    }
   }
   public render(): DiscordNode {
     return this.fc(this.props);
@@ -75,11 +77,13 @@ export class FCNode<P> extends Node {
     interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction,
   ): Promise<Discord.Message> {
     assert(this.message);
-    const rendered = this.render();
-    Node.instance = null;
-    this.stateId = 0;
-    return (this.message = await getNativeRenderer(interaction || this.message)(
-      rendered,
-    ));
+    try {
+      return (this.message = await getNativeRenderer(
+        interaction || this.message,
+      )(this.render()));
+    } finally {
+      Node.instance = null;
+      this.stateId = 0;
+    }
   }
 }

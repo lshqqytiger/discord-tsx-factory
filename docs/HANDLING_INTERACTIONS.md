@@ -41,6 +41,11 @@ guild. Reusing an ID replaces the previous callback. Give active components
 unique IDs, and remove listeners when their message is no longer active using
 the exported `deleteListener` function or the callback's `off` argument.
 
+Rendering an element registers its callback immediately. Registration replaces
+the previous listener for the same ID, including when the element is rendered
+again during a component update. The exported listener helpers operate on the
+same process-wide registry used by the default client handler.
+
 ## Once on Client constructor
 
 A client with `once: InteractionType[]` will delete handler for specified interaction from memory after that handler is once called.

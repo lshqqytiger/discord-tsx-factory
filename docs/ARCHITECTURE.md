@@ -16,6 +16,11 @@ each intrinsic element immediately. For example, `embed` becomes an
 `ButtonBuilder`. `br` becomes a newline and `field` becomes an embed field
 object.
 
+Rendering derives normalized values without modifying the caller's message or
+embed options. Child-derived embed fields and descriptions, as well as
+component and embed arrays passed to Discord.js methods, are built on copies.
+This makes it safe to reuse an options object for another send or update.
+
 The supported intrinsic elements are `message`, `embed`, `footer`, `field`,
 `emoji`, `row`, `button`, `select`, `option`, `modal`, and `input`.
 
@@ -33,6 +38,10 @@ When a component is sent, a `Node` stores the top-level renderer and the native
 Discord message. A later update renders the component again and calls
 `message.edit()` or the interaction's `update()` method. Passing the active
 button/select interaction to `setState` selects the latter path.
+
+Errors thrown by a function component are rethrown unchanged. Temporary render
+state is cleared even when rendering or the Discord API rejects, so a failed
+render does not leave the next render attached to the failed component.
 
 ## Interaction listeners
 
@@ -60,9 +69,9 @@ Importing the package runs `wrapDiscordJS()`. It wraps supported channel
 `showModal`, and component-builder `toJSON`. These wrappers recognize JSX and
 `Component` instances, render them, and otherwise delegate to discord.js.
 
-The wrappers are installed by prototype mutation. Applications should import
-the package once and should avoid loading multiple incompatible copies of the
-package or discord.js.
+The wrappers are installed by prototype mutation. Installation is idempotent
+within a loaded package instance, but applications should still avoid loading
+multiple incompatible copies of the package or discord.js.
 
 Rendering still uses process-global `Node.instance` while resolving hooks and
 component bindings. Concurrent component renders are not an explicitly

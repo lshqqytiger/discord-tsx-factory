@@ -9,7 +9,7 @@ export class Node {
 
   public topLevelRenderer?: ComponentRenderer;
   public async renderAsMessage(
-    container: MessageContainer
+    container: MessageContainer,
   ): Promise<Discord.Message> {
     throw new Error("Cannot render non-message virtual DOM as a message.");
   }
@@ -17,28 +17,33 @@ export class Node {
     assert(this.topLevelRenderer);
     return this.topLevelRenderer();
   }
+  protected async renderWithTarget(
+    target: MessageContainer,
+  ): Promise<Discord.Message> {
+    return getNativeRenderer(target)(this.render());
+  }
   public async update(
-    interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction
+    interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction,
   ): Promise<Discord.Message> {
     throw new Error("Cannot update a message of non-message virtual DOM.");
   }
 }
 export class MessageNode extends Node {
   public async renderAsMessage(
-    container: MessageContainer
+    container: MessageContainer,
   ): Promise<Discord.Message> {
-    return (this.message = await getNativeRenderer(container)(this.render()));
+    return (this.message = await this.renderWithTarget(container));
   }
   public render(): DiscordNode {
     assert(this.topLevelRenderer);
     return this.topLevelRenderer();
   }
   public async update(
-    interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction
+    interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction,
   ): Promise<Discord.Message> {
     assert(this.message);
-    return (this.message = await getNativeRenderer(interaction || this.message)(
-      this.render()
+    return (this.message = await this.renderWithTarget(
+      interaction || this.message,
     ));
   }
 }

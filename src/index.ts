@@ -1,8 +1,8 @@
 import * as Discord from "discord.js";
-import assert, { AssertionError } from "assert";
+import assert from "assert";
 
 import "./declarations";
-import { Listener } from "./interaction-listener";
+import { Listener, ListenerCallback } from "./interaction-listener";
 import { getSelectMenuBuilder } from "./utils";
 import { ComponentLike, HasChildren } from "./mixins";
 import { InteractionType } from "./enums";
@@ -11,7 +11,10 @@ import { FCNode, FunctionComponent } from "./function-component";
 import wrapDiscordJS from "./wrapper";
 
 export type DiscordFragment = Iterable<DiscordNode>;
-export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
+export class Component<
+  P = object,
+  S extends object = object,
+> extends ComponentLike<P, S> {
   private _node?: Node;
   public get node() {
     return this._node;
@@ -51,10 +54,11 @@ function ElementBuilder(
     case "br":
       return "\n";
     case "embed":
-      props.fields = [];
+      let fields: Discord.APIEmbedField[] = [];
+      let description = props.description;
 
-      if (props.description === undefined) {
-        props.description = "";
+      if (description === undefined) {
+        description = "";
 
         for (const child of props.children.flat(Infinity)) {
           const field = child instanceof Component ? child.render() : child;
@@ -63,15 +67,17 @@ function ElementBuilder(
             "name" in field &&
             "value" in field
           ) {
-            props.fields = [...props.fields, field];
+            fields = [...fields, field];
           } else {
-            props.description += child.toString();
+            description += child.toString();
           }
         }
       }
 
       return new Discord.EmbedBuilder({
         ...props,
+        description,
+        fields,
         footer:
           typeof props.footer === "string"
             ? { text: props.footer }
@@ -125,7 +131,11 @@ function ElementBuilder(
         assert(!props.url, "You can't use both customId/onClick and url.");
         Listener.listeners.set(
           props.customId,
-          new Listener(props.onClick, InteractionType.Button, props.once),
+          new Listener(
+            props.onClick as ListenerCallback,
+            InteractionType.Button,
+            props.once,
+          ),
         );
       }
       if (props.url) {
@@ -137,7 +147,11 @@ function ElementBuilder(
       if (props.onChange && props.customId) {
         Listener.listeners.set(
           props.customId,
-          new Listener(props.onChange, InteractionType.SelectMenu, props.once),
+          new Listener(
+            props.onChange as ListenerCallback,
+            InteractionType.SelectMenu,
+            props.once,
+          ),
         );
       }
       const $ = new (getSelectMenuBuilder(props.type))({
@@ -155,7 +169,11 @@ function ElementBuilder(
       if (props.onSubmit) {
         Listener.listeners.set(
           props.customId,
-          new Listener(props.onSubmit, InteractionType.Modal, props.once),
+          new Listener(
+            props.onSubmit as ListenerCallback,
+            InteractionType.Modal,
+            props.once,
+          ),
         );
       }
       return new Discord.ModalBuilder({
@@ -197,11 +215,9 @@ export function createElement<T extends JSX.IntrinsicKeys>(
       const rendered = tag(props);
       node.initialize();
       return rendered;
-    } catch (e) {
+    } catch (error) {
       Node.instance = null;
-      throw new AssertionError({
-        message: `INTERNAL ASSERTION FAILED! ${tag.name} should extend Component or be a FunctionComponent.`,
-      });
+      throw error;
     }
   }
   return ElementBuilder({

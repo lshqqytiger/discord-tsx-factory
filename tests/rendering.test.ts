@@ -2,6 +2,7 @@ import * as Discord from "discord.js";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createElement, deleteListener } from "../src/index";
+import { Node } from "../src/node";
 
 describe("intrinsic element rendering", () => {
   beforeEach(() => {
@@ -149,5 +150,23 @@ describe("intrinsic element rendering", () => {
       _tag: "message",
       children: [0, false],
     });
+  });
+
+  it("does not mutate embed props while deriving child content", () => {
+    const props = { title: "Title" } as const;
+
+    createElement("embed", props, "Content");
+
+    expect(props).toEqual({ title: "Title" });
+  });
+
+  it("preserves function-component errors and clears the render context", () => {
+    const error = new Error("component failed");
+    const component = () => {
+      throw error;
+    };
+
+    expect(() => createElement(component, {})).toThrow(error);
+    expect(Node.instance).toBeNull();
   });
 });

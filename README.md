@@ -55,6 +55,13 @@ Go to [docs/HANDLING_INTERACTIONS.md](docs/HANDLING_INTERACTIONS.md).
 For an overview of the runtime model and current revival priorities, see
 [docs/README.md](docs/README.md).
 
+Rendering does not modify the message, embed, or component option objects
+passed by the application. Function-component errors are preserved, and the
+integration wrappers are safe to initialize more than once within the same
+package instance. Listener IDs and hook render state remain process-global, so
+overlapping render scopes and duplicate IDs across independent clients are not
+supported yet.
+
 ## Command
 
 `discord-tsx-commands` is now available on npmjs!

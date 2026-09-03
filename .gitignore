@@ -1,4 +1,6 @@
+.context
+.github
+
 node_modules
 dist
 test
-performance_test

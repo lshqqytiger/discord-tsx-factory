@@ -95,7 +95,9 @@ describe("interaction listeners", () => {
     const client = new Client({ intents: [], once: [InteractionType.Button] });
 
     expect(() =>
-      client.defaultInteractionCreateListener({ customId: "button-1" } as never),
+      client.defaultInteractionCreateListener({
+        customId: "button-1",
+      } as never),
     ).toThrow("callback failed");
     expect(getListener("button-1")).toBeUndefined();
   });

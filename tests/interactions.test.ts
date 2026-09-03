@@ -10,7 +10,7 @@ import { InteractionType } from "../src/enums";
 
 describe("interaction listeners", () => {
   beforeEach(() => {
-    for (const customId of ["button-1", "button-2"]) {
+    for (const customId of ["button-1", "button-2", "select-1", "modal-1"]) {
       deleteListener(customId);
     }
   });
@@ -64,5 +64,39 @@ describe("interaction listeners", () => {
 
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledOnce();
+  });
+
+  it("registers select and modal callbacks with their interaction types", () => {
+    const selectCallback = vi.fn();
+    const modalCallback = vi.fn();
+
+    createElement("select", {
+      customId: "select-1",
+      onChange: selectCallback,
+    });
+    createElement("modal", {
+      customId: "modal-1",
+      title: "Form",
+      onSubmit: modalCallback,
+    });
+
+    expect(getListener("select-1")?.type).toBe(InteractionType.SelectMenu);
+    expect(getListener("modal-1")?.type).toBe(InteractionType.Modal);
+  });
+
+  it("removes once listeners even when their callback throws", () => {
+    createElement("button", {
+      customId: "button-1",
+      onClick: () => {
+        throw new Error("callback failed");
+      },
+    });
+
+    const client = new Client({ intents: [], once: [InteractionType.Button] });
+
+    expect(() =>
+      client.defaultInteractionCreateListener({ customId: "button-1" } as never),
+    ).toThrow("callback failed");
+    expect(getListener("button-1")).toBeUndefined();
   });
 });

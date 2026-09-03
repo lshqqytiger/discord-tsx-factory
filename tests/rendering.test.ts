@@ -112,4 +112,42 @@ describe("intrinsic element rendering", () => {
       ),
     ).toThrow("both customId/onClick and url");
   });
+
+  it("preserves nested fragments while rendering embed content", () => {
+    const embed = createElement(
+      "embed",
+      {},
+      ["first", createElement("br", {})],
+      createElement("field", { name: "Nested" }, ["field", " value"]),
+      [[" last"]],
+    );
+
+    expect((embed as Discord.EmbedBuilder).toJSON()).toMatchObject({
+      description: "first\n last",
+      fields: [{ name: "Nested", value: "field value", inline: false }],
+    });
+  });
+
+  it("does not replace an explicitly empty field value with child content", () => {
+    const field = createElement(
+      "field",
+      { name: "Empty", value: "" },
+      "Unexpected child value",
+    );
+
+    expect(field).toEqual({
+      name: "Empty",
+      value: "",
+      inline: false,
+    });
+  });
+
+  it("keeps falsy message children renderable", () => {
+    const message = createElement("message", {}, 0 as never, false as never);
+
+    expect(message).toMatchObject({
+      _tag: "message",
+      children: [0, false],
+    });
+  });
 });

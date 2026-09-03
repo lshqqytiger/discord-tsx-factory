@@ -7,6 +7,8 @@ import {
   DiscordNode,
 } from "../src/index";
 import { Node } from "../src/node";
+import { FCNode } from "../src/function-component";
+import { useState } from "../src/hooks";
 
 describe("class components", () => {
   beforeEach(() => {
@@ -50,5 +52,25 @@ describe("class components", () => {
     }
 
     await expect(new Unbound({}).setState({})).rejects.toThrow();
+  });
+
+  it("keeps function-component hook state attached to its own node", () => {
+    let setCount!: (count: number) => void;
+    const render = () => {
+      const [count, updateCount] = useState(0);
+      setCount = updateCount;
+      return createElement("message", { content: String(count) });
+    };
+    const node = new FCNode(render, {});
+    node.update = vi.fn(async () => undefined as never);
+
+    Node.instance = node;
+    const first = node.render();
+    node.initialize();
+    Node.instance = null;
+
+    expect(first).toMatchObject({ content: "0" });
+    expect(() => setCount(1)).not.toThrow();
+    expect(node.update).toHaveBeenCalledOnce();
   });
 });

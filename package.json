@@ -13,7 +13,9 @@
     "jsx"
   ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "bugs": {
     "url": "https://github.com/lshqqytiger/discord-tsx-factory/issues"
@@ -25,7 +27,9 @@
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
     "@types/node": "^22.13.1",
-    "typescript": "^5.7.3"
+    "@vitest/coverage-v8": "^4.1.11",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.11"
   },
   "peerDependencies": {
     "discord.js": "14.17.0 - 14.18.0"

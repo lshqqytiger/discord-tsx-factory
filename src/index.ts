@@ -43,7 +43,7 @@ export class Component<P = {}, S extends {} = {}> extends ComponentLike<P, S> {
 export type FC<P = {}> = FunctionComponent<P>;
 
 function ElementBuilder(
-  props: JSX.IntrinsicInternalElements[JSX.IntrinsicKeys]
+  props: JSX.IntrinsicInternalElements[JSX.IntrinsicKeys],
 ): DiscordNode | undefined {
   switch (props._tag) {
     case "message":
@@ -89,10 +89,11 @@ function ElementBuilder(
       return {
         name: props.name,
         value:
-          props.value ||
-          (typeof props.children === "object"
-            ? Array.from(props.children).flat(Infinity).join("")
-            : props.children),
+          props.value !== undefined
+            ? props.value
+            : typeof props.children === "object"
+              ? Array.from(props.children).flat(Infinity).join("")
+              : props.children,
         inline: Boolean(props.inline),
       };
     case "emoji":
@@ -114,17 +115,17 @@ function ElementBuilder(
             : String(props.children)),
       }).setStyle(
         props.style ||
-          (props.url ? Discord.ButtonStyle.Link : Discord.ButtonStyle.Primary)
+          (props.url ? Discord.ButtonStyle.Link : Discord.ButtonStyle.Primary),
       );
       if (props.onClick) {
         assert(
           props.customId,
-          "Button which has onClick property must have a customId."
+          "Button which has onClick property must have a customId.",
         );
         assert(!props.url, "You can't use both customId/onClick and url.");
         Listener.listeners.set(
           props.customId,
-          new Listener(props.onClick, InteractionType.Button, props.once)
+          new Listener(props.onClick, InteractionType.Button, props.once),
         );
       }
       if (props.url) {
@@ -136,7 +137,7 @@ function ElementBuilder(
       if (props.onChange && props.customId) {
         Listener.listeners.set(
           props.customId,
-          new Listener(props.onChange, InteractionType.SelectMenu, props.once)
+          new Listener(props.onChange, InteractionType.SelectMenu, props.once),
         );
       }
       const $ = new (getSelectMenuBuilder(props.type))({
@@ -154,7 +155,7 @@ function ElementBuilder(
       if (props.onSubmit) {
         Listener.listeners.set(
           props.customId,
-          new Listener(props.onSubmit, InteractionType.Modal, props.once)
+          new Listener(props.onSubmit, InteractionType.Modal, props.once),
         );
       }
       return new Discord.ModalBuilder({
@@ -209,18 +210,18 @@ export function createElement<T extends JSX.IntrinsicKeys>(
   } as JSX.IntrinsicInternalElements[T]);
 }
 export const Fragment = (
-  props: Partial<HasChildren<DiscordNode>>
+  props: Partial<HasChildren<DiscordNode>>,
 ): DiscordFragment => props.children || [];
 export const getListener = Listener.listeners.get.bind(Listener.listeners);
 export const setListener = Listener.listeners.set.bind(Listener.listeners);
 export const deleteListener = Listener.listeners.delete.bind(
-  Listener.listeners
+  Listener.listeners,
 );
 
 export class Client extends Discord.Client {
   private _once: InteractionType[] = [InteractionType.Modal];
   public readonly defaultInteractionCreateListener = (
-    interaction: Discord.Interaction
+    interaction: Discord.Interaction,
   ) => {
     if ("customId" in interaction) {
       const interactionListener = Listener.listeners.get(interaction.customId);
@@ -228,16 +229,16 @@ export class Client extends Discord.Client {
         return;
       }
 
-      interactionListener.listener(interaction, () =>
-        Listener.listeners.delete(interaction.customId)
-      );
-      if (
+      const shouldRemoveListener =
         (this._once.includes(interactionListener.type) &&
           interactionListener.once !== false) ||
-        interactionListener.once
-      ) {
+        interactionListener.once;
+      if (shouldRemoveListener) {
         Listener.listeners.delete(interaction.customId);
       }
+      interactionListener.listener(interaction, () =>
+        Listener.listeners.delete(interaction.customId),
+      );
     }
   };
 

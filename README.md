@@ -4,7 +4,7 @@
 
 Write Discord.js component in tsx.
 
-`discord-tsx-factory` is compatible with `discord.js` version `14.10.0 - 14.11.0`. (See `peerDependencies`)
+`discord-tsx-factory` is compatible with `discord.js` version `14.17.0 - 14.18.0`. (See `peerDependencies`)
 
 ```tsx
 import { createElement, Fragment, Client } from "discord-tsx-factory";
@@ -12,7 +12,7 @@ import * as Discord from "discord.js";
 
 const client = new Client(...);
 
-// Go to documents/EXAMPLES.md (visit GitHub) to check out example usages.
+// Go to docs/EXAMPLES.md to check out example usages.
 ```
 
 # Installation
@@ -20,13 +20,13 @@ const client = new Client(...);
 Using npm
 
 ```bash
-$ npm install --save discord.js@14.11.0 discord-tsx-factory
+$ npm install --save discord.js@14.18.0 discord-tsx-factory
 ```
 
 Using yarn
 
 ```bash
-$ yarn add discord.js@14.11.0 discord-tsx-factory
+$ yarn add discord.js@14.18.0 discord-tsx-factory
 ```
 
 You need to modify your tsconfig.json to use discord-tsx-factory:
@@ -46,11 +46,14 @@ You need to modify your tsconfig.json to use discord-tsx-factory:
 
 # Example usage
 
-Go to [EXAMPLES.md](https://github.com/lshqqytiger/discord-tsx-factory/blob/main/documents/EXAMPLES.md).
+Go to [docs/EXAMPLES.md](docs/EXAMPLES.md).
 
 # Listening and Handling interactions
 
-Go to [HANDLING_INTERACTIONS.md](https://github.com/lshqqytiger/discord-tsx-factory/blob/main/documents/HANDLING_INTERACTIONS.md).
+Go to [docs/HANDLING_INTERACTIONS.md](docs/HANDLING_INTERACTIONS.md).
+
+For an overview of the runtime model and current revival priorities, see
+[docs/README.md](docs/README.md).
 
 ## Command
 

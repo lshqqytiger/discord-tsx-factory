@@ -8,8 +8,8 @@ declare global {
   type DiscordNode = JSX.Element;
   type StateSetter<S> = (
     state: Partial<S>,
-    interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction
-  ) => void;
+    interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction,
+  ) => Promise<void>;
   type ComponentRenderer = () => DiscordNode;
   type MessageContainer =
     | Discord.BaseChannel
@@ -119,18 +119,18 @@ declare module "discord.js" {
     | Discord.ComponentType.MentionableSelect;
   export type ButtonInteractionHandler = (
     interaction: Discord.ButtonInteraction,
-    off: () => boolean
-  ) => void;
+    off: () => boolean,
+  ) => void | Promise<void>;
   export type SelectMenuInteractionHandler = (
     interaction: Discord.AnySelectMenuInteraction,
-    off: () => boolean
-  ) => void;
+    off: () => boolean,
+  ) => void | Promise<void>;
   export type ModalSubmitInteractionHandler = (
-    interaction: Discord.ModalSubmitInteraction
-  ) => void;
+    interaction: Discord.ModalSubmitInteraction,
+  ) => void | Promise<void>;
   interface PartialTextBasedChannelFields<InGuild extends boolean = boolean> {
     send(
-      options: JSX.Element | JSX.IntrinsicProps["message"]
+      options: JSX.Element | JSX.IntrinsicProps["message"],
     ): Promise<Message<InGuild>>;
   }
 
@@ -157,36 +157,36 @@ declare module "discord.js" {
         | JSX.Element
         | string
         | MessagePayload
-        | ElementMessageReplyOptions
+        | ElementMessageReplyOptions,
     ): Promise<OmitPartialGroupDMChannel<Message<InGuild>>>;
   }
   interface CommandInteraction<Cached extends CacheType = CacheType> {
     reply(
-      options: JSX.Element | ElementInteractionReplyOptions
+      options: JSX.Element | ElementInteractionReplyOptions,
     ): Promise<Message<BooleanCache<Cached>>>;
     editReply(
-      options: JSX.Element | ElementInteractionEditReplyOptions
+      options: JSX.Element | ElementInteractionEditReplyOptions,
     ): Promise<Message<BooleanCache<Cached>>>;
-    showModal(modal: JSX.Element): Promise<Message<BooleanCache<Cached>>>;
+    showModal(modal: JSX.Element): Promise<undefined>;
   }
   interface MessageComponentInteraction<Cached extends CacheType = CacheType> {
     reply(
-      options: JSX.Element | ElementInteractionReplyOptions
+      options: JSX.Element | ElementInteractionReplyOptions,
     ): Promise<Message<BooleanCache<Cached>>>;
     editReply(
-      options: JSX.Element | ElementInteractionEditReplyOptions
+      options: JSX.Element | ElementInteractionEditReplyOptions,
     ): Promise<Message<BooleanCache<Cached>>>;
-    showModal(modal: JSX.Element): Promise<Message<BooleanCache<Cached>>>;
+    showModal(modal: JSX.Element): Promise<undefined>;
     update(
-      options: ElementInteractionUpdateOptions
+      options: ElementInteractionUpdateOptions,
     ): Promise<Message<BooleanCache<Cached>>>;
   }
   interface ModalSubmitInteraction<Cached extends CacheType = CacheType> {
     reply(
-      options: JSX.Element | ElementInteractionReplyOptions
+      options: JSX.Element | ElementInteractionReplyOptions,
     ): Promise<Message<BooleanCache<Cached>>>;
     editReply(
-      options: JSX.Element | ElementInteractionEditReplyOptions
+      options: JSX.Element | ElementInteractionEditReplyOptions,
     ): Promise<Message<BooleanCache<Cached>>>;
   }
 }

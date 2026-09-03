@@ -26,7 +26,10 @@ describe("interaction listeners", () => {
     expect(getListener("button-1")?.type).toBe(InteractionType.Button);
 
     const client = new Client({ intents: [] });
-    client.defaultInteractionCreateListener({ customId: "button-1" } as never);
+    client.defaultInteractionCreateListener({
+      customId: "button-1",
+      isButton: () => true,
+    } as never);
 
     expect(callback).toHaveBeenCalledOnce();
     expect(getListener("button-1")).toBeUndefined();
@@ -43,7 +46,8 @@ describe("interaction listeners", () => {
     });
 
     const client = new Client({ intents: [], once: [InteractionType.Button] });
-    const interaction = (customId: string) => ({ customId }) as never;
+    const interaction = (customId: string) =>
+      ({ customId, isButton: () => true }) as never;
     client.defaultInteractionCreateListener(interaction("button-1"));
     client.defaultInteractionCreateListener(interaction("button-1"));
     client.defaultInteractionCreateListener(interaction("button-2"));
@@ -60,10 +64,79 @@ describe("interaction listeners", () => {
     createElement("button", { customId: "button-1", onClick: second });
 
     const client = new Client({ intents: [] });
-    client.defaultInteractionCreateListener({ customId: "button-1" } as never);
+    client.defaultInteractionCreateListener({
+      customId: "button-1",
+      isButton: () => true,
+    } as never);
 
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledOnce();
+  });
+
+  it("does not dispatch a listener to the wrong interaction type", async () => {
+    const buttonCallback = vi.fn();
+    const modalCallback = vi.fn();
+    createElement("button", { customId: "button-1", onClick: buttonCallback });
+    createElement("modal", {
+      customId: "modal-1",
+      title: "Form",
+      onSubmit: modalCallback,
+    });
+
+    const client = new Client({ intents: [] });
+    await client.defaultInteractionCreateListener({
+      customId: "button-1",
+      isModalSubmit: () => true,
+    } as never);
+    await client.defaultInteractionCreateListener({
+      customId: "modal-1",
+      isButton: () => true,
+    } as never);
+
+    expect(buttonCallback).not.toHaveBeenCalled();
+    expect(modalCallback).not.toHaveBeenCalled();
+  });
+
+  it("does not let an old listener remove its replacement", async () => {
+    let off!: () => boolean;
+    const first = vi.fn((_interaction, remove: () => boolean) => {
+      off = remove;
+    });
+    const second = vi.fn();
+    createElement("button", { customId: "button-1", onClick: first });
+
+    const client = new Client({ intents: [] });
+    await client.defaultInteractionCreateListener({
+      customId: "button-1",
+      isButton: () => true,
+    } as never);
+    createElement("button", { customId: "button-1", onClick: second });
+
+    expect(off()).toBe(false);
+    await client.defaultInteractionCreateListener({
+      customId: "button-1",
+      isButton: () => true,
+    } as never);
+
+    expect(second).toHaveBeenCalledOnce();
+  });
+
+  it("returns rejected async callback failures", async () => {
+    createElement("button", {
+      customId: "button-1",
+      onClick: async () => {
+        throw new Error("async callback failed");
+      },
+    });
+
+    const client = new Client({ intents: [] });
+
+    await expect(
+      client.defaultInteractionCreateListener({
+        customId: "button-1",
+        isButton: () => true,
+      } as never),
+    ).rejects.toThrow("async callback failed");
   });
 
   it("registers select and modal callbacks with their interaction types", () => {
@@ -97,6 +170,7 @@ describe("interaction listeners", () => {
     expect(() =>
       client.defaultInteractionCreateListener({
         customId: "button-1",
+        isButton: () => true,
       } as never),
     ).toThrow("callback failed");
     expect(getListener("button-1")).toBeUndefined();

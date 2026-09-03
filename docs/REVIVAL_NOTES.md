@@ -21,6 +21,10 @@ render/update path. The declared `componentWillUnmount` hook is never called by
 the current implementation. Re-rendering can also replace entries in the
 global map without tracking which component created them.
 
+The callback `off` function now removes only the listener instance that created
+it, so an old callback cannot remove a replacement registered with the same ID.
+Ownership and automatic cleanup are still unresolved.
+
 ### Function component state depends on call order
 
 `useState` retrieves state by an incrementing numeric slot. Conditional or
@@ -41,6 +45,9 @@ be treated as a risk until this context is made explicit.
 `componentWillUnmount`, and `componentDidCatch`. The current source only calls
 `componentDidUpdate` after a class component's successful `setState` update.
 The other hooks, including error handling, are not invoked automatically.
+
+Interaction dispatch and function-component state setters now return promises;
+async callback and update failures are propagated to their callers.
 
 ## API and maintenance notes
 

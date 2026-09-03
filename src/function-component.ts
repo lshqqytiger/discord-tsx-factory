@@ -9,8 +9,8 @@ export interface FunctionComponent<P> {
 }
 export type FCStateSetter<S> = (
   state: S,
-  interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction
-) => void;
+  interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction,
+) => Promise<void>;
 export class FCState<T> {
   private _state: T;
   private readonly node: FCNode<any>;
@@ -28,7 +28,7 @@ export class FCState<T> {
   public setState: FCStateSetter<T> = (state, interaction) => {
     this._state = state;
     Node.instance = this.node;
-    this.node.update(interaction);
+    return this.node.update(interaction).then(() => undefined);
   };
 }
 export class FCNode<P> extends Node {
@@ -61,7 +61,7 @@ export class FCNode<P> extends Node {
     this.stateId = 0;
   }
   public async renderAsMessage(
-    container: MessageContainer
+    container: MessageContainer,
   ): Promise<Discord.Message> {
     const rendered = this.render();
     Node.instance = null;
@@ -72,14 +72,14 @@ export class FCNode<P> extends Node {
     return this.fc(this.props);
   }
   public async update(
-    interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction
+    interaction?: Discord.ButtonInteraction | Discord.AnySelectMenuInteraction,
   ): Promise<Discord.Message> {
     assert(this.message);
     const rendered = this.render();
     Node.instance = null;
     this.stateId = 0;
     return (this.message = await getNativeRenderer(interaction || this.message)(
-      rendered
+      rendered,
     ));
   }
 }

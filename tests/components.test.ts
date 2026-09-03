@@ -54,8 +54,8 @@ describe("class components", () => {
     await expect(new Unbound({}).setState({})).rejects.toThrow();
   });
 
-  it("keeps function-component hook state attached to its own node", () => {
-    let setCount!: (count: number) => void;
+  it("keeps function-component hook state attached to its own node", async () => {
+    let setCount!: (count: number) => Promise<void>;
     const render = () => {
       const [count, updateCount] = useState(0);
       setCount = updateCount;
@@ -70,7 +70,7 @@ describe("class components", () => {
     Node.instance = null;
 
     expect(first).toMatchObject({ content: "0" });
-    expect(() => setCount(1)).not.toThrow();
+    await expect(setCount(1)).resolves.toBeUndefined();
     expect(node.update).toHaveBeenCalledOnce();
   });
 });

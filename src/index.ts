@@ -222,11 +222,11 @@ export class Client extends Discord.Client {
   private _once: InteractionType[] = [InteractionType.Modal];
   public readonly defaultInteractionCreateListener = (
     interaction: Discord.Interaction,
-  ) => {
+  ): Promise<void> => {
     if ("customId" in interaction) {
       const interactionListener = Listener.listeners.get(interaction.customId);
-      if (!interactionListener) {
-        return;
+      if (!interactionListener || !interactionListener.matches(interaction)) {
+        return Promise.resolve();
       }
 
       const shouldRemoveListener =
@@ -236,10 +236,18 @@ export class Client extends Discord.Client {
       if (shouldRemoveListener) {
         Listener.listeners.delete(interaction.customId);
       }
-      interactionListener.listener(interaction, () =>
-        Listener.listeners.delete(interaction.customId),
-      );
+      return Promise.resolve(
+        interactionListener.listener(interaction, () => {
+          if (
+            Listener.listeners.get(interaction.customId) === interactionListener
+          ) {
+            return Listener.listeners.delete(interaction.customId);
+          }
+          return false;
+        }),
+      ).then(() => undefined);
     }
+    return Promise.resolve();
   };
 
   constructor(options: Discord.ClientOptions & { once?: InteractionType[] }) {

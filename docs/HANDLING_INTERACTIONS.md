@@ -32,6 +32,15 @@ Basically (when you didn't turn off default 'interactionCreate' listener and def
 
 But with client configuration, component property and method, you can delete handler from memory.
 
+The default handler only invokes a callback when the interaction kind matches
+the element that registered it. Its return value is a promise, so async
+callbacks and Discord API failures can be observed by the application.
+
+Listener IDs are process-wide and are not scoped to a client, message, user, or
+guild. Reusing an ID replaces the previous callback. Give active components
+unique IDs, and remove listeners when their message is no longer active using
+the exported `deleteListener` function or the callback's `off` argument.
+
 ## Once on Client constructor
 
 A client with `once: InteractionType[]` will delete handler for specified interaction from memory after that handler is once called.

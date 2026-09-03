@@ -41,6 +41,13 @@ the process-wide `Listener.listeners` map. The key is the element's
 `customId`. The factory `Client` installs a default `interactionCreate` handler
 that looks up the key, invokes the callback, and applies `once` rules.
 
+Dispatch verifies that the interaction kind matches the listener kind, so a
+button, select-menu, or modal callback is ignored for an unrelated interaction.
+The default handler returns a promise, allowing applications to observe async
+callback failures. A callback's `off` function only removes the listener
+instance that created it and cannot remove a newer replacement with the same
+ID.
+
 The exported `getListener`, `setListener`, and `deleteListener` functions are
 bound directly to that map. This is useful for integration code, but it also
 means listener registration is global rather than scoped to a client or
@@ -56,6 +63,11 @@ Importing the package runs `wrapDiscordJS()`. It wraps supported channel
 The wrappers are installed by prototype mutation. Applications should import
 the package once and should avoid loading multiple incompatible copies of the
 package or discord.js.
+
+Rendering still uses process-global `Node.instance` while resolving hooks and
+component bindings. Concurrent component renders are not an explicitly
+supported guarantee yet; applications should avoid overlapping render scopes
+until that context is made local to each render.
 
 ## Important rendering rules
 

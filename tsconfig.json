@@ -1,8 +1,9 @@
 {
-  "extends": "@tsconfig/node22/tsconfig.json",
+  "extends": "@tsconfig/node24/tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
-    "baseUrl": "./src",
+    "types": ["node"],
+    "paths": { "*": ["./src/*"] },
     "sourceMap": true,
     "lib": ["ES2022"],
     "esModuleInterop": true,
@@ -10,6 +11,7 @@
     "strict": true,
     "skipLibCheck": true,
     "declaration": true,
+    "rootDir": "./src",
     "outDir": "./dist"
   },
   "include": ["src/**/*.ts"]

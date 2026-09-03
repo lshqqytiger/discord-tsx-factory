@@ -81,6 +81,6 @@ Check out [discord-tsx-commands on GitHub](https://github.com/lshqqytiger/discor
 
 # License
 
-MIT License
+MIT No Attribution License
 
-Copyright (c) 2022 이승훈
+Copyright (c) 2022 Seunghoon Lee
